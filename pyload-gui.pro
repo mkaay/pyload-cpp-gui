@@ -36,4 +36,5 @@ LIBS += /usr/local/lib/libthrift.a\
 INCLUDEPATH += /usr/local/include/thrift
 
 OTHER_FILES += \
-    pyload.thrift
+    pyload.thrift \
+    generateThrift.sh
