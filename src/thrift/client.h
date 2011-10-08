@@ -3,7 +3,7 @@
 
 #include "thriftinterface/Pyload.h"
 
-#include <transport/TSocket.h>
+#include "thrift/transport/TSocket.h"
 #include <transport/TBufferTransports.h>
 #include <protocol/TBinaryProtocol.h>
 
@@ -15,7 +15,7 @@ using namespace apache::thrift::transport;
 
 using namespace Pyload;
 
-#define SERVER_VERSION "0.4.5"
+#define SERVER_VERSION "0.4.8"
 
 enum FailReason {NoError, ConnectionError, WrongVersion, BadCredentials};
 

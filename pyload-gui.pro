@@ -10,31 +10,32 @@ TARGET = pyload-gui
 TEMPLATE = app
 
 
-SOURCES += main.cpp\
-        mainwindow.cpp \
-    thriftinterface/pyload_types.cpp \
-    thriftinterface/pyload_constants.cpp \
-    thriftinterface/Pyload.cpp \
-    thriftclient.cpp \
-    connectionmanager.cpp
+SOURCES += src/main.cpp\
+        src/mainwindow.cpp \
+    src/thriftinterface/pyload_types.cpp \
+    src/thriftinterface/pyload_constants.cpp \
+    src/thriftinterface/Pyload.cpp \
+    src/thriftclient.cpp \
+    src/connectionmanager.cpp
 
-HEADERS  += mainwindow.h \
-    thriftinterface/pyload_types.h \
-    thriftinterface/pyload_constants.h \
-    thriftinterface/Pyload.h \
-    thriftclient.h \
-    connectionmanager.h
+HEADERS  += src/mainwindow.h \
+    src/thriftinterface/pyload_types.h \
+    src/thriftinterface/pyload_constants.h \
+    src/thriftinterface/Pyload.h \
+    src/thriftclient.h \
+    src/connectionmanager.h \
+    src/thrift/transport/TSocket.h
 
-FORMS    += mainwindow.ui \
-    connectionmanager.ui
+FORMS    += src/mainwindow.ui \
+    src/connectionmanager.ui
 
-RESOURCES += \
-    resources.qrc
+RESOURCES += src/resources.qrc
 
-LIBS += /usr/local/lib/libthrift.a\
+LIBS += /usr/local/lib/libthrift.a
 
 INCLUDEPATH += /usr/local/include/thrift
 
 OTHER_FILES += \
-    pyload.thrift \
-    generateThrift.sh
+    src/pyload.thrift \
+    src/generateThrift.sh
+

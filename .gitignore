@@ -1,0 +1,8 @@
+*.o
+moc_*.cpp
+ui_*.h
+*.lproj
+Pkginfo
+Makefile
+Info.plist
+*.pro.user
