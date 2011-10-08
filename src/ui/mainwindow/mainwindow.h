@@ -7,10 +7,10 @@
 #include <QSpinBox>
 #include <QComboBox>
 #include <QLineEdit>
+#include <QSettings>
 
-#include "thriftclient.h"
-#include "connectionmanager.h"
-#include "thriftinterface/Pyload.h"
+#include "../../thrift/client.h"
+#include "../../thrift/interface/Pyload.h"
 
 using namespace Pyload;
 
@@ -25,7 +25,7 @@ class MainWindow : public QMainWindow
 public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
-    void setClient(ThriftClient *tc);
+    void setClient(ThriftClient *client);
 
 private slots:
     void startLoop();
@@ -38,6 +38,7 @@ private slots:
 
 signals:
     void proxyReady();
+    void connectionManager();
 
 private:
     Ui::MainWindow *ui;

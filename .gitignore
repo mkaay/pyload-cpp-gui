@@ -6,3 +6,5 @@ Pkginfo
 Makefile
 Info.plist
 *.pro.user
+qrc_*.cpp
+*.app

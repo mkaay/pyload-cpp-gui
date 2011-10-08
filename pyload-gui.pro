@@ -11,31 +11,32 @@ TEMPLATE = app
 
 
 SOURCES += src/main.cpp\
-        src/mainwindow.cpp \
-    src/thriftinterface/pyload_types.cpp \
-    src/thriftinterface/pyload_constants.cpp \
-    src/thriftinterface/Pyload.cpp \
-    src/thriftclient.cpp \
-    src/connectionmanager.cpp
+        src/ui/mainwindow/mainwindow.cpp \
+    src/thrift/interface/pyload_types.cpp \
+    src/thrift/interface/pyload_constants.cpp \
+    src/thrift/interface/Pyload.cpp \
+    src/thrift/client.cpp \
+    src/ui/connectionmanager/connectionmanager.cpp
 
-HEADERS  += src/mainwindow.h \
-    src/thriftinterface/pyload_types.h \
-    src/thriftinterface/pyload_constants.h \
-    src/thriftinterface/Pyload.h \
-    src/thriftclient.h \
-    src/connectionmanager.h \
+HEADERS  += src/ui/mainwindow/mainwindow.h \
+    src/thrift/interface/pyload_types.h \
+    src/thrift/interface/pyload_constants.h \
+    src/thrift/interface/Pyload.h \
+    src/thrift/client.h \
+    src/ui/connectionmanager/connectionmanager.h \
     src/thrift/transport/TSocket.h
 
-FORMS    += src/mainwindow.ui \
-    src/connectionmanager.ui
+FORMS    += src/ui/mainwindow/mainwindow.ui \
+    src/ui/connectionmanager/connectionmanager.ui
 
-RESOURCES += src/resources.qrc
+RESOURCES += resources/resources.qrc
 
 LIBS += /usr/local/lib/libthrift.a
 
 INCLUDEPATH += /usr/local/include/thrift
 
 OTHER_FILES += \
-    src/pyload.thrift \
-    src/generateThrift.sh
+    src/thrift/pyload.thrift \
+    tools/generateThrift.sh \
+    tools/refreshInterface.sh
 

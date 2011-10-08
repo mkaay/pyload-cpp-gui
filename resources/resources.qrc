@@ -1,26 +1,26 @@
 <RCC>
     <qresource prefix="/images">
-        <file>resources/images/abort.png</file>
-        <file>resources/images/add_small.png</file>
-        <file>resources/images/clipboard.png</file>
-        <file>resources/images/close.png</file>
-        <file>resources/images/edit_small.png</file>
-        <file>resources/images/pull_small.png</file>
-        <file>resources/images/push_small.png</file>
-        <file>resources/images/refresh1_small.png</file>
-        <file>resources/images/refresh_small.png</file>
-        <file>resources/images/remove_small.png</file>
-        <file>resources/images/toolbar_add.png</file>
-        <file>resources/images/toolbar_pause.png</file>
-        <file>resources/images/toolbar_remove.png</file>
-        <file>resources/images/toolbar_start.png</file>
-        <file>resources/images/toolbar_stop.png</file>
+        <file>images/abort.png</file>
+        <file>images/add_small.png</file>
+        <file>images/clipboard.png</file>
+        <file>images/close.png</file>
+        <file>images/edit_small.png</file>
+        <file>images/pull_small.png</file>
+        <file>images/push_small.png</file>
+        <file>images/refresh1_small.png</file>
+        <file>images/refresh_small.png</file>
+        <file>images/remove_small.png</file>
+        <file>images/toolbar_add.png</file>
+        <file>images/toolbar_pause.png</file>
+        <file>images/toolbar_remove.png</file>
+        <file>images/toolbar_start.png</file>
+        <file>images/toolbar_stop.png</file>
     </qresource>
     <qresource prefix="/icons">
-        <file>resources/icons/logo.png</file>
-        <file>resources/icons/logo-gui.png</file>
-        <file>resources/icons/pyload.ico</file>
-        <file>resources/icons/pyload2.ico</file>
-        <file>resources/icons/pyload-gui.ico</file>
+        <file>icons/logo.png</file>
+        <file>icons/logo-gui.png</file>
+        <file>icons/pyload.ico</file>
+        <file>icons/pyload2.ico</file>
+        <file>icons/pyload-gui.ico</file>
     </qresource>
 </RCC>

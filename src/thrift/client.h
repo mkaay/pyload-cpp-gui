@@ -1,13 +1,14 @@
 #ifndef THRIFTCLIENT_H
 #define THRIFTCLIENT_H
 
-#include "thriftinterface/Pyload.h"
+#include "interface/Pyload.h"
 
-#include "thrift/transport/TSocket.h"
+#include "transport/TSocket.h"
 #include <transport/TBufferTransports.h>
 #include <protocol/TBinaryProtocol.h>
 
-#include <QtCore/QString>
+#include <QString>
+#include <QObject>
 
 using namespace apache::thrift;
 using namespace apache::thrift::protocol;
@@ -19,17 +20,27 @@ using namespace Pyload;
 
 enum FailReason {NoError, ConnectionError, WrongVersion, BadCredentials};
 
-class ThriftClient
+class ThriftClient : public QObject
 {
+    Q_OBJECT
 public:
-    ThriftClient();
-    bool connect(QString host, int port, QString user, QString password);
-    void disconnect();
+    explicit ThriftClient();
     FailReason getError();
     PyloadClient* getProxy();
 
+    void doConnect(QString host, int port, QString user, QString password);
+
+signals:
+    void _doConnect(QString host, int port, QString user, QString password);
+    void disconnect();
+    void connected(bool ok);
+
+private slots:
+    void _connect(QString host, int port, QString user, QString password);
+    void _disconnect();
+
 private:
-    bool connected;
+    bool connectionOK;
     FailReason error;
 
     boost::shared_ptr<TSocket> *socket;

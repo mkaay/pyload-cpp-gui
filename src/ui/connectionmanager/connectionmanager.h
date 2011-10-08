@@ -4,8 +4,8 @@
 #include <QWidget>
 #include <QSettings>
 
-#include "thriftclient.h"
-#include "mainwindow.h"
+#include "../../thrift/client.h"
+#include "../mainwindow/mainwindow.h"
 
 namespace Ui {
     class ConnectionManager;
@@ -19,11 +19,21 @@ public:
     explicit ConnectionManager(QWidget *parent = 0);
     ~ConnectionManager();
 
+    void setMainWindow(MainWindow *w);
+    void doConnect();
+
+signals:
+    void _doConnect();
+
 private slots:
     void on_connectButton_clicked();
+    void connected(bool ok);
+    void _connect();
 
 private:
     Ui::ConnectionManager *ui;
+    MainWindow *main;
+    ThriftClient *client;
 };
 
 #endif // CONNECTIONMANAGER_H

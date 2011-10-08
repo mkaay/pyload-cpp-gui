@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>660</width>
-    <height>500</height>
+    <width>847</width>
+    <height>566</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -18,25 +18,15 @@
     <item>
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>0</number>
+       <number>1</number>
       </property>
-      <widget class="QWidget" name="overviewTab">
-       <attribute name="title">
-        <string>Overview</string>
-       </attribute>
-       <layout class="QVBoxLayout" name="verticalLayout_4">
-        <item>
-         <widget class="QListView" name="overview"/>
-        </item>
-       </layout>
-      </widget>
-      <widget class="QWidget" name="detailsTab">
+      <widget class="QWidget" name="downloadsTab">
        <attribute name="title">
         <string>Details</string>
        </attribute>
        <layout class="QVBoxLayout" name="verticalLayout_3">
         <item>
-         <widget class="QTreeView" name="details"/>
+         <widget class="QTreeView" name="downloads"/>
         </item>
        </layout>
       </widget>
@@ -56,6 +46,11 @@
           <attribute name="headerVisible">
            <bool>false</bool>
           </attribute>
+          <column>
+           <property name="text">
+            <string notr="true">1</string>
+           </property>
+          </column>
          </widget>
         </item>
         <item>
@@ -68,8 +63,8 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>462</width>
-             <height>330</height>
+             <width>615</width>
+             <height>390</height>
             </rect>
            </property>
           </widget>
@@ -100,8 +95,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>660</width>
-     <height>23</height>
+     <width>847</width>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuPyLoad_Gui">
@@ -174,9 +169,8 @@
     <bool>true</bool>
    </property>
    <property name="icon">
-    <iconset resource="resources.qrc">
-     <normaloff>:/images/resources/images/toolbar_start.png</normaloff>
-     <normalon>:/images/resources/images/toolbar_pause.png</normalon>:/images/resources/images/toolbar_start.png</iconset>
+    <iconset resource="../../../resources/resources.qrc">
+     <normaloff>:/images/images/toolbar_start.png</normaloff>:/images/images/toolbar_start.png</iconset>
    </property>
    <property name="text">
     <string>pause</string>
@@ -187,8 +181,8 @@
   </action>
   <action name="actionStop">
    <property name="icon">
-    <iconset resource="resources.qrc">
-     <normaloff>:/images/resources/images/toolbar_stop.png</normaloff>:/images/resources/images/toolbar_stop.png</iconset>
+    <iconset resource="../../../resources/resources.qrc">
+     <normaloff>:/images/images/toolbar_stop.png</normaloff>:/images/images/toolbar_stop.png</iconset>
    </property>
    <property name="text">
     <string>stop</string>
@@ -196,8 +190,8 @@
   </action>
   <action name="actionAdd">
    <property name="icon">
-    <iconset resource="resources.qrc">
-     <normaloff>:/images/resources/images/toolbar_add.png</normaloff>:/images/resources/images/toolbar_add.png</iconset>
+    <iconset resource="../../../resources/resources.qrc">
+     <normaloff>:/images/images/toolbar_add.png</normaloff>:/images/images/toolbar_add.png</iconset>
    </property>
    <property name="text">
     <string>add</string>
@@ -208,8 +202,8 @@
     <bool>true</bool>
    </property>
    <property name="icon">
-    <iconset resource="resources.qrc">
-     <normaloff>:/images/resources/images/clipboard.png</normaloff>:/images/resources/images/clipboard.png</iconset>
+    <iconset resource="../../../resources/resources.qrc">
+     <normaloff>:/images/images/clipboard.png</normaloff>:/images/images/clipboard.png</iconset>
    </property>
    <property name="text">
     <string>clipboard</string>
@@ -263,7 +257,7 @@
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <resources>
-  <include location="resources.qrc"/>
+  <include location="../../../resources/resources.qrc"/>
  </resources>
  <connections/>
 </ui>

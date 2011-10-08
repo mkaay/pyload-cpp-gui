@@ -1,6 +1,8 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
+#include <QDebug>
+
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
@@ -18,25 +20,23 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
-void MainWindow::setClient(ThriftClient *tc)
+void MainWindow::setClient(ThriftClient *client)
 {
-    proxy = tc->getProxy();
+    proxy = client->getProxy();
     emit proxyReady();
 }
 
 void MainWindow::on_actionConnectionManager_triggered()
 {
     hide();
-    deleteLater();
 
-    ConnectionManager *cm;
-    cm = new ConnectionManager();
-    cm->show();
+    emit connectionManager();
 }
 
 void MainWindow::startLoop()
 {
     logOffset = 0;
+    updateLog();
 
     QTreeWidgetItem *root = ui->settingsTree->invisibleRootItem();
 
@@ -48,8 +48,13 @@ void MainWindow::startLoop()
     root->addChild(coreSettings);
     root->addChild(pluginSettings);
 
-    proxy->getConfig(coresections);
-    proxy->getPluginConfig(pluginsections);
+    try {
+        proxy->getConfig(coresections);
+        proxy->getPluginConfig(pluginsections);
+    } catch (TApplicationException) {
+        qDebug() << "config error";
+        return;
+    }
 
     for (uint i = 0; i < coresections.size(); i++)
     {
@@ -146,11 +151,13 @@ void MainWindow::settingsSectionChanged(QTreeWidgetItem *item, int column)
 void MainWindow::updateLog()
 {
     std::vector<std::string> log;
-    proxy->getLog(log, 0);
-    for (uint i = 0; i < log.size(); i++)
-    {
-        QString line = QString::fromStdString(log[i]);
-        ui->logBox->appendPlainText(line.left(line.length()-1));
+    proxy->getLog(log, logOffset);
+    ui->logBox->clear();
+
+    std::string line;
+    foreach (line, log) {
+        ui->logBox->appendPlainText(QString::fromStdString(line).trimmed());
+        logOffset++;
     }
 }
 

@@ -9,14 +9,25 @@ ConnectionManager::ConnectionManager(QWidget *parent) :
 
     QSettings settings;
     ui->hostLineEdit->setText(settings.value("connection/host").toString());
-    ui->portSpinBox->setValue(settings.value("connection/port").toInt());
+    if (settings.value("connection/port").toInt() > 0) {
+        ui->portSpinBox->setValue(settings.value("connection/port").toInt());
+    } else {
+        ui->portSpinBox->setValue(7227);
+    }
     ui->userLineEdit->setText(settings.value("connection/user").toString());
     ui->passwordLineEdit->setText(settings.value("connection/password").toString());
+
+    connect(this, SIGNAL(_doConnect()), this, SLOT(_connect()));
 }
 
 ConnectionManager::~ConnectionManager()
 {
     delete ui;
+}
+
+void ConnectionManager::setMainWindow(MainWindow *w)
+{
+    main = w;
 }
 
 void ConnectionManager::on_connectButton_clicked()
@@ -33,27 +44,43 @@ void ConnectionManager::on_connectButton_clicked()
     settings.setValue("connection/user", ui->userLineEdit->text());
     settings.setValue("connection/password", ui->passwordLineEdit->text());
 
-    ThriftClient *tc = new ThriftClient();
-    bool connected = tc->connect(settings.value("connection/host").toString(),
-               settings.value("connection/port").toInt(),
-               settings.value("connection/user").toString(),
-               settings.value("connection/password").toString());
+    emit doConnect();
+}
 
-    hide();
-    if (connected)
-    {
-        MainWindow *w = new MainWindow();
-        w->setClient(tc);
-        w->show();
+void ConnectionManager::doConnect()
+{
+    emit _doConnect();
+}
 
-        deleteLater();
-    }
-    else
-    {
+void ConnectionManager::_connect()
+{
+    client = new ThriftClient();
+
+    connect(client, SIGNAL(connected(bool)), this, SLOT(connected(bool)));
+
+    QSettings settings;
+    client->doConnect(settings.value("connection/host").toString(),
+                settings.value("connection/port").toInt(),
+                settings.value("connection/user").toString(),
+                settings.value("connection/password").toString());
+}
+
+void ConnectionManager::connected(bool ok)
+{
+    if (ok) {
+        disconnect(client, SIGNAL(connected(bool)), this, SLOT(connected(bool)));
+        hide();
+        main->show();
+        main->setClient(client);
+    } else {
         ui->hostLineEdit->setEnabled(true);
         ui->portSpinBox->setEnabled(true);
         ui->userLineEdit->setEnabled(true);
         ui->passwordLineEdit->setEnabled(true);
         ui->connectButton->setEnabled(true);
+
+        if (!isVisible()) {
+            show();
+        }
     }
 }

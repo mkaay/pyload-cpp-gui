@@ -1,11 +1,21 @@
-#include "thriftclient.h"
+#include "client.h"
 
-ThriftClient::ThriftClient()
+#include <QDebug>
+
+ThriftClient::ThriftClient() :
+    QObject()
 {
-    connected = false;
+    connectionOK = false;
+    connect(this, SIGNAL(_doConnect(QString,int,QString,QString)), this, SLOT(_connect(QString,int,QString,QString)));
+    connect(this, SIGNAL(disconnect()), this, SLOT(_disconnect()));
 }
 
-bool ThriftClient::connect(QString host, int port, QString user, QString password)
+void ThriftClient::doConnect(QString host, int port, QString user, QString password)
+{
+    emit _doConnect(host, port, user, password);
+}
+
+void ThriftClient::_connect(QString host, int port, QString user, QString password)
 {
     socket = new boost::shared_ptr<TSocket>(new TSocket(host.toStdString(), port));
     transport = new boost::shared_ptr<TTransport>(new TBufferedTransport(*socket));
@@ -20,7 +30,7 @@ bool ThriftClient::connect(QString host, int port, QString user, QString passwor
     catch (TTransportException)
     {
         error = ConnectionError;
-        return false;
+        return;
     }
 
     try
@@ -32,7 +42,8 @@ bool ThriftClient::connect(QString host, int port, QString user, QString passwor
 
             if (SERVER_VERSION == version)
             {
-                connected = true;
+                connectionOK = true;
+                qDebug() << "login ok";
                 error = NoError;
             }
             else
@@ -50,13 +61,13 @@ bool ThriftClient::connect(QString host, int port, QString user, QString passwor
         error = ConnectionError;
     }
 
-    return connected;
+    emit connected(connectionOK);
 }
 
-void ThriftClient::disconnect()
+void ThriftClient::_disconnect()
 {
     transport->get()->close();
-    connected = false;
+    connectionOK = false;
 }
 
 PyloadClient* ThriftClient::getProxy()

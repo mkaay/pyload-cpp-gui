@@ -1,9 +1,9 @@
-#include <QtGui/QApplication>
-#include "QSettings"
+#include <QApplication>
+#include <QSettings>
 
-#include "mainwindow.h"
-#include "connectionmanager.h"
-#include "thriftclient.h"
+#include "ui/mainwindow/mainwindow.h"
+#include "ui/connectionmanager/connectionmanager.h"
+#include "thrift/client.h"
 
 int main(int argc, char *argv[])
 {
@@ -15,36 +15,19 @@ int main(int argc, char *argv[])
 
     QSettings settings;
 
-    bool connected = false;
+    MainWindow *w = new MainWindow();
+    ConnectionManager *cm = new ConnectionManager();
 
-    ConnectionManager *cm;
-    MainWindow *w;
+    //MainWindow w();
+    //ConnectionManager cm();
+    cm->setMainWindow(w);
 
-    if (settings.value("firststart", true).toBool())
-    {
+    if (settings.value("firststart", true).toBool()) {
         settings.setValue("firststart", false);
 
-        cm = new ConnectionManager();
         cm->show();
-    }
-    else
-    {
-        ThriftClient *tc = new ThriftClient();
-        connected = tc->connect(settings.value("connection/host", "127.0.0.1").toString(),
-                   settings.value("connection/port", "7227").toInt(),
-                   settings.value("connection/user", "User").toString(),
-                   settings.value("connection/password", "password").toString());
-        if (connected)
-        {
-            w = new MainWindow();
-            w->setClient(tc);
-            w->show();
-        }
-        else
-        {
-            cm = new ConnectionManager();
-            cm->show();
-        }
+    } else {
+        cm->doConnect();
     }
 
     return a.exec();
