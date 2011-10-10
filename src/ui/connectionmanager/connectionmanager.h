@@ -3,6 +3,7 @@
 
 #include <QWidget>
 #include <QSettings>
+#include <QKeyEvent>
 
 #include "../../thrift/client.h"
 #include "../mainwindow/mainwindow.h"
@@ -30,10 +31,15 @@ private slots:
     void connected(bool ok);
     void _connect();
 
+    void on_actionReturnPressed_triggered();
+
 private:
     Ui::ConnectionManager *ui;
     MainWindow *main;
     ThriftClient *client;
+
+protected:
+    bool eventFilter(QObject *obj, QEvent *ev);
 };
 
 #endif // CONNECTIONMANAGER_H

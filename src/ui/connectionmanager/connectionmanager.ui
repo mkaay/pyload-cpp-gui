@@ -7,11 +7,11 @@
     <x>0</x>
     <y>0</y>
     <width>262</width>
-    <height>270</height>
+    <height>294</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Form</string>
+   <string>pyLoad GUI - Connection Manager</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
@@ -148,7 +148,61 @@
     </layout>
    </item>
   </layout>
+  <action name="actionReturnPressed">
+   <property name="text">
+    <string>returnPressed</string>
+   </property>
+  </action>
  </widget>
  <resources/>
- <connections/>
+ <connections>
+  <connection>
+   <sender>userLineEdit</sender>
+   <signal>returnPressed()</signal>
+   <receiver>actionReturnPressed</receiver>
+   <slot>trigger()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>166</x>
+     <y>175</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>202</x>
+     <y>265</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>passwordLineEdit</sender>
+   <signal>returnPressed()</signal>
+   <receiver>actionReturnPressed</receiver>
+   <slot>trigger()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>166</x>
+     <y>207</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>hostLineEdit</sender>
+   <signal>returnPressed()</signal>
+   <receiver>actionReturnPressed</receiver>
+   <slot>trigger()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>160</x>
+     <y>43</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>-1</x>
+     <y>-1</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
 </ui>

@@ -11,18 +11,22 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>MainWindow</string>
+   <string>pyLoad GUI</string>
+  </property>
+  <property name="windowIcon">
+   <iconset resource="../../../resources/resources.qrc">
+    <normaloff>:/icons/icons/logo.png</normaloff>:/icons/icons/logo.png</iconset>
   </property>
   <widget class="QWidget" name="centralWidget">
    <layout class="QVBoxLayout" name="verticalLayout">
     <item>
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>1</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="downloadsTab">
        <attribute name="title">
-        <string>Details</string>
+        <string>Downloads</string>
        </attribute>
        <layout class="QVBoxLayout" name="verticalLayout_3">
         <item>
@@ -139,6 +143,9 @@
    <addaction name="menuHelp"/>
   </widget>
   <widget class="QToolBar" name="mainToolBar">
+   <property name="movable">
+    <bool>false</bool>
+   </property>
    <property name="iconSize">
     <size>
      <width>40</width>
@@ -165,9 +172,6 @@
    </property>
   </action>
   <action name="actionPause">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
    <property name="icon">
     <iconset resource="../../../resources/resources.qrc">
      <normaloff>:/images/images/toolbar_start.png</normaloff>:/images/images/toolbar_start.png</iconset>
@@ -251,7 +255,10 @@
   </action>
   <action name="actionSettings">
    <property name="text">
-    <string>Settings</string>
+    <string>GUI Settings</string>
+   </property>
+   <property name="toolTip">
+    <string>GUI Settings</string>
    </property>
   </action>
  </widget>

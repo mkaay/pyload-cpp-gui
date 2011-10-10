@@ -17,6 +17,8 @@ ConnectionManager::ConnectionManager(QWidget *parent) :
     ui->userLineEdit->setText(settings.value("connection/user").toString());
     ui->passwordLineEdit->setText(settings.value("connection/password").toString());
 
+    ui->portSpinBox->installEventFilter(this);
+
     connect(this, SIGNAL(_doConnect()), this, SLOT(_connect()));
 }
 
@@ -73,14 +75,34 @@ void ConnectionManager::connected(bool ok)
         main->show();
         main->setClient(client);
     } else {
-        ui->hostLineEdit->setEnabled(true);
-        ui->portSpinBox->setEnabled(true);
-        ui->userLineEdit->setEnabled(true);
-        ui->passwordLineEdit->setEnabled(true);
-        ui->connectButton->setEnabled(true);
-
         if (!isVisible()) {
             show();
         }
     }
+
+    ui->hostLineEdit->setEnabled(true);
+    ui->portSpinBox->setEnabled(true);
+    ui->userLineEdit->setEnabled(true);
+    ui->passwordLineEdit->setEnabled(true);
+    ui->connectButton->setEnabled(true);
+}
+
+bool ConnectionManager::eventFilter(QObject *obj, QEvent *ev)
+{
+    if (obj == ui->portSpinBox) {
+        if (ev->type() == QEvent::KeyPress) {
+            QKeyEvent *event = static_cast<QKeyEvent *>(ev);
+            if (event->key() == Qt::Key_Enter || event->key() == Qt::Key_Return) {
+                emit on_connectButton_clicked();
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+void ConnectionManager::on_actionReturnPressed_triggered()
+{
+    emit on_connectButton_clicked();
 }

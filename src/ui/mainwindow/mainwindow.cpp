@@ -9,9 +9,13 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
     ui->settings->setLayout(new QFormLayout());
+    ui->statusBar->addWidget(&downloadStatus);
 
     readSettings();
 
+    QClipboard *clipboard = QApplication::clipboard();
+
+    connect(clipboard, SIGNAL(dataChanged()), this, SLOT(clipboardChanged()));
     connect(this, SIGNAL(proxyReady()), this, SLOT(startLoop()));
 }
 
@@ -33,10 +37,23 @@ void MainWindow::on_actionConnectionManager_triggered()
     emit connectionManager();
 }
 
+void MainWindow::updateTrigger()
+{
+    updateServerStatus();
+    updateLog();
+
+    QTimer::singleShot(1000, this, SLOT(updateTrigger()));
+}
+
 void MainWindow::startLoop()
 {
     logOffset = 0;
-    updateLog();
+
+    QTimer::singleShot(0, this, SLOT(updateTrigger()));
+
+    initDownloads();
+
+    return;
 
     QTreeWidgetItem *root = ui->settingsTree->invisibleRootItem();
 
@@ -193,11 +210,124 @@ void MainWindow::closeEvent(QCloseEvent *event)
 
 void MainWindow::on_actionExit_triggered()
 {
-    exit(0);
+    QCoreApplication::quit();
 }
 
 void MainWindow::on_actionSettings_triggered()
 {
-    ui->tabWidget->setCurrentIndex(2);
+
 }
 
+void MainWindow::on_actionWiki_triggered()
+{
+    QDesktopServices::openUrl(QUrl("http://pyload.org/wiki"));
+}
+
+void MainWindow::on_actionForum_triggered()
+{
+    QDesktopServices::openUrl(QUrl("http://forum.pyload.org/"));
+}
+
+void MainWindow::on_actionPause_triggered()
+{
+    proxy->togglePause();
+    updateServerStatus();
+}
+
+void MainWindow::updateServerStatus()
+{
+    ServerStatus status;
+    proxy->statusServer(status);
+
+    if (status.pause) {
+        ui->actionPause->setIcon(QIcon(":/images/images/toolbar_start.png"));
+    } else {
+        ui->actionPause->setIcon(QIcon(":/images/images/toolbar_pause.png"));
+    }
+
+    downloadStatus.setText(QString("Speed: %1").arg(QString::number(status.speed/1024.0, 'f', 2)));
+}
+
+void MainWindow::clipboardChanged()
+{
+    if (ui->actionClipboard->isChecked()) {
+        QRegExp linkmatch("(http|https|ftp)://[a-z0-9]+([\\-\\.]{1}[a-z0-9]+)*\\.[a-z]{2,5}(([0-9]{1,5})?/.*)?", Qt::CaseInsensitive);
+
+        QString clip = QApplication::clipboard()->text();
+        LinkList links;
+        int pos = 0;
+
+        while ((pos = linkmatch.indexIn(clip, pos)) != -1) {
+            links.resize(links.size()+1);
+            links[links.size()-1] = linkmatch.cap().toStdString();
+            pos += linkmatch.matchedLength();
+        }
+
+        proxy->addPackage("Clipboard", links, Destination::Queue);
+    }
+}
+
+void MainWindow::initDownloads()
+{
+    DownloadsModel *model = new DownloadsModel();
+    ui->downloads->setModel(model);
+
+    std::vector<PackageData> queue;
+
+    std::map<int16_t, PackageID> packageorder;
+    proxy->getPackageOrder(packageorder, Destination::Collector); // fixme: destination switched!
+
+    std::pair<int16_t, PackageID> packagepair;
+    foreach (packagepair, packageorder) {
+        PackageData p;
+        proxy->getPackageData(p, packagepair.second);
+
+        std::map<int16_t, FileID> fileorder;
+        proxy->getFileOrder(fileorder, packagepair.second);
+
+        p.links.empty();
+        std::pair<int16_t, FileID> filepair;
+        foreach (filepair, fileorder) {
+            FileData f;
+            proxy->getFileData(f, filepair.second);
+
+            qDebug() << QString::fromStdString(f.name);
+
+            p.links.resize(p.links.size()+1);
+            p.links[p.links.size()-1] = f;
+        }
+        queue.resize(queue.size()+1);
+        queue[queue.size()-1] = p;
+    }
+
+    model->initQueue(queue);
+
+    std::vector<PackageData> collector;
+
+    packageorder.empty();
+    proxy->getPackageOrder(packageorder, Destination::Queue); // fixme: destination switched!
+
+    foreach (packagepair, packageorder) {
+        PackageData p;
+        proxy->getPackageData(p, packagepair.second);
+
+        std::map<int16_t, FileID> fileorder;
+        proxy->getFileOrder(fileorder, packagepair.second);
+
+        p.links.empty();
+        std::pair<int16_t, FileID> filepair;
+        foreach (filepair, fileorder) {
+            FileData f;
+            proxy->getFileData(f, filepair.second);
+
+            qDebug() << QString::fromStdString(f.name);
+
+            p.links.resize(p.links.size()+1);
+            p.links[p.links.size()-1] = f;
+        }
+        collector.resize(collector.size()+1);
+        collector[collector.size()-1] = p;
+    }
+
+    model->initCollector(collector);
+}

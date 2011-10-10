@@ -18,8 +18,8 @@ int main(int argc, char *argv[])
     MainWindow *w = new MainWindow();
     ConnectionManager *cm = new ConnectionManager();
 
-    //MainWindow w();
-    //ConnectionManager cm();
+    w->connect(w, SIGNAL(connectionManager()), cm, SLOT(show()));
+    w->connect(w, SIGNAL(connectionManager()), w, SLOT(hide()));
     cm->setMainWindow(w);
 
     if (settings.value("firststart", true).toBool()) {
