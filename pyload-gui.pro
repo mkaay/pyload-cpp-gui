@@ -17,7 +17,8 @@ SOURCES += src/main.cpp\
     src/thrift/interface/Pyload.cpp \
     src/thrift/client.cpp \
     src/ui/connectionmanager/connectionmanager.cpp \
-    src/ui/downloadsmodel.cpp
+    src/ui/downloadsmodel.cpp \
+    src/ui/progressdelegate.cpp
 
 HEADERS  += src/ui/mainwindow/mainwindow.h \
     src/thrift/interface/pyload_types.h \
@@ -26,7 +27,8 @@ HEADERS  += src/ui/mainwindow/mainwindow.h \
     src/thrift/client.h \
     src/ui/connectionmanager/connectionmanager.h \
     src/thrift/transport/TSocket.h \
-    src/ui/downloadsmodel.h
+    src/ui/downloadsmodel.h \
+    src/ui/progressdelegate.h
 
 FORMS    += src/ui/mainwindow/mainwindow.ui \
     src/ui/connectionmanager/connectionmanager.ui
@@ -41,6 +43,8 @@ OTHER_FILES += \
     src/thrift/pyload.thrift \
     tools/generateThrift.sh \
     tools/refreshInterface.sh
+
+
 
 
 

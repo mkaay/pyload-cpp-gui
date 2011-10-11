@@ -15,11 +15,13 @@
 #include <QLabel>
 #include <QClipboard>
 #include <QRegExp>
+#include <QUuid>
 
 #include "../../thrift/client.h"
 #include "../../thrift/interface/Pyload.h"
 
 #include "../downloadsmodel.h"
+#include "../progressdelegate.h"
 
 using namespace Pyload;
 
@@ -57,6 +59,7 @@ private:
     Ui::MainWindow *ui;
     PyloadClient *proxy;
     QLabel downloadStatus;
+    QUuid uuid;
 
     uint logOffset;
     std::vector<ConfigSection> coresections;
@@ -66,7 +69,11 @@ private:
     void writeSettings();
     void updateLog();
     void updateServerStatus();
-    void initDownloads();
+    void initQueue();
+    void initCollector();
+    std::vector<PackageData> getPackages(Destination::type destination);
+    PackageData getPackageData(PackageID id);
+    void updateEvents();
 
 protected:
     void closeEvent(QCloseEvent *event);

@@ -27,6 +27,7 @@ MainWindow::~MainWindow()
 void MainWindow::setClient(ThriftClient *client)
 {
     proxy = client->getProxy();
+    uuid = QUuid::createUuid();
     emit proxyReady();
 }
 
@@ -41,6 +42,7 @@ void MainWindow::updateTrigger()
 {
     updateServerStatus();
     updateLog();
+    updateEvents();
 
     QTimer::singleShot(1000, this, SLOT(updateTrigger()));
 }
@@ -48,10 +50,20 @@ void MainWindow::updateTrigger()
 void MainWindow::startLoop()
 {
     logOffset = 0;
+    DownloadsModel *model = new DownloadsModel();
+    ui->downloads->setModel(model);
+
+    ProgressDelegate *delegate = new ProgressDelegate();
+    ui->downloads->setItemDelegateForColumn(6, delegate);
+
+    ui->downloads->setColumnWidth(0, 300);
+    ui->downloads->setColumnWidth(1, 100);
+    ui->downloads->setColumnWidth(2, 140);
+    ui->downloads->setColumnWidth(3, 50);
+    ui->downloads->setColumnWidth(4, 130);
+    ui->downloads->setColumnWidth(5, 70);
 
     QTimer::singleShot(0, this, SLOT(updateTrigger()));
-
-    initDownloads();
 
     return;
 
@@ -267,67 +279,86 @@ void MainWindow::clipboardChanged()
     }
 }
 
-void MainWindow::initDownloads()
+void MainWindow::initQueue()
 {
-    DownloadsModel *model = new DownloadsModel();
-    ui->downloads->setModel(model);
+    std::vector<PackageData> queue = getPackages(Destination::Collector); // fixme: destination switched!
+    ((DownloadsModel*) ui->downloads->model())->initQueue(queue);
+}
 
-    std::vector<PackageData> queue;
+void MainWindow::initCollector()
+{
+    std::vector<PackageData> collector = getPackages(Destination::Queue); // fixme: destination switched!
+    ((DownloadsModel*) ui->downloads->model())->initCollector(collector);
+}
+
+std::vector<PackageData> MainWindow::getPackages(Destination::type destination)
+{
+    std::vector<PackageData> packages;
 
     std::map<int16_t, PackageID> packageorder;
-    proxy->getPackageOrder(packageorder, Destination::Collector); // fixme: destination switched!
+    proxy->getPackageOrder(packageorder, destination);
 
     std::pair<int16_t, PackageID> packagepair;
     foreach (packagepair, packageorder) {
-        PackageData p;
-        proxy->getPackageData(p, packagepair.second);
+        PackageData p = getPackageData(packagepair.second);
 
-        std::map<int16_t, FileID> fileorder;
-        proxy->getFileOrder(fileorder, packagepair.second);
-
-        p.links.empty();
-        std::pair<int16_t, FileID> filepair;
-        foreach (filepair, fileorder) {
-            FileData f;
-            proxy->getFileData(f, filepair.second);
-
-            qDebug() << QString::fromStdString(f.name);
-
-            p.links.resize(p.links.size()+1);
-            p.links[p.links.size()-1] = f;
-        }
-        queue.resize(queue.size()+1);
-        queue[queue.size()-1] = p;
+        packages.resize(packages.size()+1);
+        packages[packages.size()-1] = p;
     }
 
-    model->initQueue(queue);
+    return packages;
+}
 
-    std::vector<PackageData> collector;
+PackageData MainWindow::getPackageData(PackageID id)
+{
+    PackageData p;
+    proxy->getPackageData(p, id);
 
-    packageorder.empty();
-    proxy->getPackageOrder(packageorder, Destination::Queue); // fixme: destination switched!
+    std::map<int16_t, FileID> fileorder;
+    proxy->getFileOrder(fileorder, id);
 
-    foreach (packagepair, packageorder) {
-        PackageData p;
-        proxy->getPackageData(p, packagepair.second);
+    p.links.resize(0);
+    std::pair<int16_t, FileID> filepair;
+    foreach (filepair, fileorder) {
+        FileData f;
+        proxy->getFileData(f, filepair.second);
 
-        std::map<int16_t, FileID> fileorder;
-        proxy->getFileOrder(fileorder, packagepair.second);
-
-        p.links.empty();
-        std::pair<int16_t, FileID> filepair;
-        foreach (filepair, fileorder) {
-            FileData f;
-            proxy->getFileData(f, filepair.second);
-
-            qDebug() << QString::fromStdString(f.name);
-
-            p.links.resize(p.links.size()+1);
-            p.links[p.links.size()-1] = f;
-        }
-        collector.resize(collector.size()+1);
-        collector[collector.size()-1] = p;
+        p.links.resize(p.links.size()+1);
+        p.links[p.links.size()-1] = f;
     }
 
-    model->initCollector(collector);
+    return p;
+}
+
+void MainWindow::updateEvents()
+{
+    std::vector<Event> events;
+    proxy->getEvents(events, uuid.toString().toStdString());
+
+    Event event;
+    foreach (event, events) {
+        qDebug() << QString::fromStdString(event.event);
+        if (event.event == "reload") {
+            if (event.destination == Destination::Queue) {
+                initQueue();
+            } else {
+                initCollector();
+            }
+        } else if (event.event == "insert") {
+            ItemDestination destination = Queue;
+            if (event.destination == Destination::Queue) { // fixme: switched
+                destination = Collector;
+            }
+
+            DownloadsModel *model = (DownloadsModel*) ui->downloads->model();
+            if (event.type == ElementType::Package) {
+                PackageData package = getPackageData(event.id);
+                model->insertPackage(destination, package);
+            } else {
+                FileData file;
+                proxy->getFileData(file, event.id);
+                model->insertFile(destination, file);
+            }
+        }
+    }
 }
