@@ -6,7 +6,8 @@
 #include <QKeyEvent>
 
 #include "../../thrift/client.h"
-#include "../mainwindow/mainwindow.h"
+
+class MainWindow;
 
 namespace Ui {
     class ConnectionManager;

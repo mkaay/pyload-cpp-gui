@@ -1,6 +1,8 @@
 #include "connectionmanager.h"
 #include "ui_connectionmanager.h"
 
+#include "../mainwindow/mainwindow.h"
+
 ConnectionManager::ConnectionManager(QWidget *parent) :
     QWidget(parent),
     ui(new Ui::ConnectionManager)

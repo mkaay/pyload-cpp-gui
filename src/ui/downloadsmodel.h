@@ -6,22 +6,19 @@
 #include <QAbstractItemModel>
 #include <QBrush>
 #include <QColor>
+#include <QSharedPointer>
+
+#include "../package.h"
+#include "../file.h"
 
 using namespace Pyload;
 
-enum ItemType {Package, File};
-enum ItemDestination {Queue, Collector};
-
-/*
- * A wrapper is needed, because we need to distinguish between FileData and PackageData structs.
- * The internalPointer of the QModelIndex points to this structure, so we can either cast to FileData or PackageData.
- * Additionally parentRow and destination are helpers to quickly find a parent of a QModelIndex, instead of looping through the queue and collector vectors.
- */
-struct ItemWrap {
-    ItemType type;
-    ItemDestination destination;
-    uint16_t parentRow;
-    const void *pointer;
+struct Wrap {
+    bool isPackage;
+    union {
+        Package* package;
+        File* file;
+    };
 };
 
 class DownloadsModel : public QAbstractItemModel
@@ -30,30 +27,41 @@ class DownloadsModel : public QAbstractItemModel
 public:
     explicit DownloadsModel(QObject *parent = 0);
 
-    QModelIndex index(int row, int column, const QModelIndex &parent) const;
+    QModelIndex index(int row, int column, const QModelIndex &parent = QModelIndex()) const;
     QModelIndex parent(const QModelIndex &child) const;
-    int rowCount(const QModelIndex &parent) const;
-    int columnCount(const QModelIndex &parent) const;
+    int rowCount(const QModelIndex &parent = QModelIndex()) const;
+    int columnCount(const QModelIndex &parent = QModelIndex()) const;
     QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const;
     Qt::ItemFlags flags(const QModelIndex &index) const;
     QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const;
 
-    void initQueue(std::vector<PackageData> queue);
-    void initCollector(std::vector<PackageData> collector);
-
-    void insertPackage(ItemDestination destination, PackageData package);
-    void insertFile(ItemDestination destination, FileData file);
-
     QString formatSize(long size) const;
+    QString formatETA(int eta) const;
+    QString formatStatus(FileStatus status) const;
 
-signals:
+    bool isPackage(const QModelIndex &index) const;
+    Package* packageFromIndex(const QModelIndex &index) const;
+    File* fileFromIndex(const QModelIndex &index) const;
+
+    Package* getPackage(int row) const;
+    int packageCount() const;
 
 public slots:
+    void addFile(Pyload::FileData &f);
+    void addPackage(Pyload::PackageData &p);
+    void addPackage(Pyload::PackageInfo &p);
+    void removeFile(int id);
+    void removePackage(int id);
+    void updatePackage(Pyload::PackageData &p);
+    void updateFile(Pyload::FileData &f);
+    void updateDownloadStatus(Pyload::DownloadInfo &info);
 
 private:
     static QStringList sections;
-    std::vector<PackageData> queue;
-    std::vector<PackageData> collector;
+    QMap<Package*, Wrap*> *package_wraps;
+    QMap<File*, Wrap*> *file_wraps;
+    QList<Package*> packages;
+    QMutex mutex;
 };
 
 #endif // DOWNLOADSMODEL_H

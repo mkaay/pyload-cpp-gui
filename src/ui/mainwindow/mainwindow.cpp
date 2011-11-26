@@ -1,6 +1,8 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
+#include "../../eventloop.h"
+
 #include <QDebug>
 
 MainWindow::MainWindow(QWidget *parent) :
@@ -10,6 +12,10 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->setupUi(this);
     ui->settings->setLayout(new QFormLayout());
     ui->statusBar->addWidget(&downloadStatus);
+
+    addMenu.addAction("Package");
+    addMenu.addAction("Links");
+    addMenu.addAction("Container", this, SLOT(addContainer()));
 
     readSettings();
 
@@ -27,13 +33,14 @@ MainWindow::~MainWindow()
 void MainWindow::setClient(ThriftClient *client)
 {
     proxy = client->getProxy();
-    uuid = QUuid::createUuid();
     emit proxyReady();
 }
 
 void MainWindow::on_actionConnectionManager_triggered()
 {
     hide();
+
+    eventloop->exit();
 
     emit connectionManager();
 }
@@ -42,7 +49,6 @@ void MainWindow::updateTrigger()
 {
     updateServerStatus();
     updateLog();
-    updateEvents();
 
     QTimer::singleShot(1000, this, SLOT(updateTrigger()));
 }
@@ -50,8 +56,26 @@ void MainWindow::updateTrigger()
 void MainWindow::startLoop()
 {
     logOffset = 0;
-    DownloadsModel *model = new DownloadsModel();
-    ui->downloads->setModel(model);
+    ui->downloads->setModel(&model);
+
+    eventloop = QSharedPointer<EventLoop>(new EventLoop);
+
+    qRegisterMetaType<Pyload::FileData>("Pyload::FileData&");
+    qRegisterMetaType<Pyload::PackageData>("Pyload::PackageData&");
+    qRegisterMetaType<Pyload::PackageInfo>("Pyload::PackageInfo&");
+    qRegisterMetaType<Pyload::DownloadInfo>("Pyload::DownloadInfo&");
+
+    connect(eventloop.data(), SIGNAL(addFile(Pyload::FileData&)), &model, SLOT(addFile(Pyload::FileData&)), Qt::QueuedConnection);
+    connect(eventloop.data(), SIGNAL(addPackage(Pyload::PackageData&)), &model, SLOT(addPackage(Pyload::PackageData&)), Qt::QueuedConnection);
+    connect(eventloop.data(), SIGNAL(addPackage(Pyload::PackageInfo&)), &model, SLOT(addPackage(Pyload::PackageInfo&)), Qt::QueuedConnection);
+    connect(eventloop.data(), SIGNAL(removeFile(int)), &model, SLOT(removeFile(int)), Qt::QueuedConnection);
+    connect(eventloop.data(), SIGNAL(removePackage(int)), &model, SLOT(removePackage(int)), Qt::QueuedConnection);
+    connect(eventloop.data(), SIGNAL(updateFile(Pyload::FileData&)), &model, SLOT(updateFile(Pyload::FileData&)), Qt::QueuedConnection);
+    connect(eventloop.data(), SIGNAL(updatePackage(Pyload::PackageData&)), &model, SLOT(updatePackage(Pyload::PackageData&)), Qt::QueuedConnection);
+    connect(eventloop.data(), SIGNAL(updateDownloadStatus(Pyload::DownloadInfo&)), &model, SLOT(updateDownloadStatus(Pyload::DownloadInfo&)), Qt::QueuedConnection);
+
+    eventloop->start();
+    eventloop->init();
 
     ProgressDelegate *delegate = new ProgressDelegate();
     ui->downloads->setItemDelegateForColumn(6, delegate);
@@ -65,7 +89,7 @@ void MainWindow::startLoop()
 
     QTimer::singleShot(0, this, SLOT(updateTrigger()));
 
-    return;
+    //return;
 
     QTreeWidgetItem *root = ui->settingsTree->invisibleRootItem();
 
@@ -109,7 +133,7 @@ void MainWindow::startLoop()
             this, SLOT(settingsSectionChanged(QTreeWidgetItem*, int)));
 }
 
-void MainWindow::settingsSectionChanged(QTreeWidgetItem *item, int column)
+void MainWindow::settingsSectionChanged(QTreeWidgetItem *item, int)
 {
     QLayoutItem *child;
     while (ui->settings->layout()->count() > 0 && (child = ui->settings->layout()->takeAt(0)) != 0)
@@ -279,85 +303,39 @@ void MainWindow::clipboardChanged()
     }
 }
 
-void MainWindow::initQueue()
+void MainWindow::on_actionAdd_triggered()
 {
-    std::vector<PackageData> queue = getPackages(Destination::Collector); // fixme: destination switched!
-    ((DownloadsModel*) ui->downloads->model())->initQueue(queue);
+    addMenu.exec(QCursor::pos());
 }
 
-void MainWindow::initCollector()
+void MainWindow::addContainer()
 {
-    std::vector<PackageData> collector = getPackages(Destination::Queue); // fixme: destination switched!
-    ((DownloadsModel*) ui->downloads->model())->initCollector(collector);
-}
+    QStringList namefilter;
+    namefilter << "All Container Types (*.dlc *.ccf *.rsdf *.txt)";
+    namefilter << "DLC (*.dlc)";
+    namefilter << "CCF (*.ccf)";
+    namefilter << "RSDF (*.rsdf)";
+    namefilter << "Text Files (*.txt)";
 
-std::vector<PackageData> MainWindow::getPackages(Destination::type destination)
-{
-    std::vector<PackageData> packages;
+    QSettings settings;
 
-    std::map<int16_t, PackageID> packageorder;
-    proxy->getPackageOrder(packageorder, destination);
+    QFileDialog dialog(this, "Open container");
+    dialog.setDirectory(settings.value("browser/container-path", "").toString());
+    dialog.setFileMode(QFileDialog::ExistingFiles);
+    dialog.setNameFilters(namefilter);
 
-    std::pair<int16_t, PackageID> packagepair;
-    foreach (packagepair, packageorder) {
-        PackageData p = getPackageData(packagepair.second);
+    if (dialog.exec() == QDialog::Accepted) {
+        QString file;
+        foreach (file, dialog.selectedFiles()) {
+            settings.setValue("browser/container-path", file);
 
-        packages.resize(packages.size()+1);
-        packages[packages.size()-1] = p;
-    }
-
-    return packages;
-}
-
-PackageData MainWindow::getPackageData(PackageID id)
-{
-    PackageData p;
-    proxy->getPackageData(p, id);
-
-    std::map<int16_t, FileID> fileorder;
-    proxy->getFileOrder(fileorder, id);
-
-    p.links.resize(0);
-    std::pair<int16_t, FileID> filepair;
-    foreach (filepair, fileorder) {
-        FileData f;
-        proxy->getFileData(f, filepair.second);
-
-        p.links.resize(p.links.size()+1);
-        p.links[p.links.size()-1] = f;
-    }
-
-    return p;
-}
-
-void MainWindow::updateEvents()
-{
-    std::vector<Event> events;
-    proxy->getEvents(events, uuid.toString().toStdString());
-
-    Event event;
-    foreach (event, events) {
-        qDebug() << QString::fromStdString(event.event);
-        if (event.event == "reload") {
-            if (event.destination == Destination::Queue) {
-                initQueue();
+            QFile fh(file);
+            QFileInfo info(file);
+            if (fh.open(QIODevice::ReadOnly)) {
+                proxy->uploadContainer(info.fileName().toStdString(), QString(fh.readAll()).toStdString());
+                qDebug() << "uplaoded" << info.fileName();
             } else {
-                initCollector();
-            }
-        } else if (event.event == "insert") {
-            ItemDestination destination = Queue;
-            if (event.destination == Destination::Queue) { // fixme: switched
-                destination = Collector;
-            }
-
-            DownloadsModel *model = (DownloadsModel*) ui->downloads->model();
-            if (event.type == ElementType::Package) {
-                PackageData package = getPackageData(event.id);
-                model->insertPackage(destination, package);
-            } else {
-                FileData file;
-                proxy->getFileData(file, event.id);
-                model->insertFile(destination, file);
+                qDebug() << "can't open file" << info.fileName();
             }
         }
     }

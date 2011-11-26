@@ -16,12 +16,17 @@
 #include <QClipboard>
 #include <QRegExp>
 #include <QUuid>
+#include <QMenu>
+#include <QFileDialog>
 
 #include "../../thrift/client.h"
 #include "../../thrift/interface/Pyload.h"
 
 #include "../downloadsmodel.h"
 #include "../progressdelegate.h"
+
+class EventLoop;
+class DownloadList;
 
 using namespace Pyload;
 
@@ -51,6 +56,9 @@ private slots:
     void on_actionForum_triggered();
     void on_actionPause_triggered();
 
+    void on_actionAdd_triggered();
+    void addContainer();
+
 signals:
     void proxyReady();
     void connectionManager();
@@ -59,7 +67,9 @@ private:
     Ui::MainWindow *ui;
     PyloadClient *proxy;
     QLabel downloadStatus;
-    QUuid uuid;
+    QMenu addMenu;
+    DownloadsModel model;
+    QSharedPointer<EventLoop> eventloop;
 
     uint logOffset;
     std::vector<ConfigSection> coresections;
@@ -73,7 +83,6 @@ private:
     void initCollector();
     std::vector<PackageData> getPackages(Destination::type destination);
     PackageData getPackageData(PackageID id);
-    void updateEvents();
 
 protected:
     void closeEvent(QCloseEvent *event);

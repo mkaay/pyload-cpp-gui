@@ -1,13 +1,16 @@
 #include <QApplication>
 #include <QSettings>
 
+#include "application.h"
+
+#include "thrift/client.h"
+
 #include "ui/mainwindow/mainwindow.h"
 #include "ui/connectionmanager/connectionmanager.h"
-#include "thrift/client.h"
 
 int main(int argc, char *argv[])
 {
-    QApplication a(argc, argv);
+    Application a(argc, argv);
 
     QCoreApplication::setOrganizationName("pyLoad");
     QCoreApplication::setOrganizationDomain("pyload.org");
