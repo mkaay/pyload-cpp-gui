@@ -10,7 +10,7 @@ ProgressDelegate::ProgressDelegate(QObject *parent) :
 
 void ProgressDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const
 {
-    if (index.column() == 6) {
+    if (index.isValid()) {
         QStyleOptionProgressBar progressBarOption;
         progressBarOption.rect = option.rect;
         progressBarOption.minimum = 0;

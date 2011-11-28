@@ -32,12 +32,13 @@ public:
 
 signals:
     void _doConnect(QString host, int port, QString user, QString password);
-    void disconnect();
     void connected(bool ok);
 
 private slots:
     void _connect(QString host, int port, QString user, QString password);
-    void _disconnect();
+
+public slots:
+    void disconnect();
 
 private:
     bool connectionOK;

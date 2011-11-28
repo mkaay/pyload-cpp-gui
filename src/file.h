@@ -28,8 +28,9 @@ enum FileStatus {
   Unknown = 14
 };
 
-class File
+class File : public QObject
 {
+    Q_OBJECT
 public:
     explicit File();
 
@@ -65,6 +66,9 @@ public:
     Package* getPackage();
 
     bool operator <(File &other);
+
+signals:
+    void update(int id);
 
 private:
     QMutex mutex;

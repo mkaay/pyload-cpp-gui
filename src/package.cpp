@@ -4,9 +4,22 @@
 
 #include "file.h"
 
-Package::Package()
+Package::Package() : QObject()
 {
+    size = -1;
+    downloadedSize = -1;
+    progress = -1;
+    speed = -1;
+    eta = -1;
+    status = -1;
+}
 
+Package::~Package() {
+    foreach (File *file, files) {
+        file->deleteLater();
+    }
+    files.clear();
+    idlookup.clear();
 }
 
 void Package::parse(Pyload::PackageData &data)
@@ -43,62 +56,72 @@ void Package::parse(Pyload::PackageInfo &data)
     order = data.order;
 }
 
+void Package::fileUpdated(int id)
+{
+    size = -1;
+    downloadedSize = -1;
+    progress = -1;
+    speed = -1;
+    eta = -1;
+    status = -1;
+}
+
 void Package::addFile(File *f)
 {
     QMutexLocker locker(&mutex);
     files.append(f);
+    idlookup.insert(f->getID(), f);
+    connect(f, SIGNAL(update(int)), this, SLOT(fileUpdated(int)));
+    emit fileUpdated(f->getID());
 }
 
 void Package::clearFiles()
 {
     QMutexLocker locker(&mutex);
     files.clear();
+    idlookup.clear();
 }
 
 void Package::insertFile(int position, File *f)
 {
     QMutexLocker locker(&mutex);
     files.insert(position, f);
+    idlookup.insert(f->getID(), f);
+    connect(f, SIGNAL(update(int)), this, SLOT(fileUpdated(int)));
+    emit fileUpdated(f->getID());
 }
 
 void Package::removeFile(File *f)
 {
     QMutexLocker locker(&mutex);
+    idlookup.remove(f->getID());
     files.removeOne(f);
 }
 
 bool Package::removeFile(int id)
 {
     QMutexLocker locker(&mutex);
-    foreach (File *f, files) {
-        if (f->getID() == id) {
-            files.removeOne(f);
-            return true;
-        }
+    if (!idlookup.contains(id)) {
+        return false;
     }
-    return false;
+    files.removeOne(idlookup.value(id));
+    idlookup.remove(id);
+    return true;
 }
 
 bool Package::contains(int id)
 {
     QMutexLocker locker(&mutex);
-    foreach (File *f, files) {
-        if (f->getID() == id) {
-            return true;
-        }
-    }
-    return false;
+    return idlookup.contains(id);
 }
 
 int Package::indexOf(int id)
 {
     QMutexLocker locker(&mutex);
-    foreach (File *f, files) {
-        if (f->getID() == id) {
-            return files.indexOf(f);
-        }
+    if (!idlookup.contains(id)) {
+        return -1;
     }
-    return -1;
+    return files.indexOf(idlookup.value(id));
 }
 
 int Package::getID()
@@ -134,56 +157,76 @@ QStringList Package::getPlugins()
 long Package::getSize()
 {
     QMutexLocker locker(&mutex);
-    long size = 0;
-    foreach (File *file, files) {
-        size += file->getSize();
+    if (size >= 0) {
+        return size;
     }
-    return size;
+    long s = 0;
+    foreach (File *file, files) {
+        s += file->getSize();
+    }
+    size = s;
+    return s;
 }
 
 long Package::getDownloadedSize()
 {
     QMutexLocker locker(&mutex);
+    if (downloadedSize >= 0) {
+        return downloadedSize;
+    }
     long size = 0;
     foreach (File *file, files) {
         size += file->getDownloadedSize();
     }
+    downloadedSize = size;
     return size;
 }
 
 int Package::getStatus()
 {
     QMutexLocker locker(&mutex);
-    FileStatus status = Finished;
+    if (status >= 0) {
+        return status;
+    }
+    int st = Finished;
     foreach (File *file, files) {
-        if (status < file->getStatus()) {
-            status = file->getStatus();
+        if (st < file->getStatus()) {
+            st = file->getStatus();
         }
     }
-    return status;
+    status = st;
+    return st;
 }
 
 short Package::getProgress()
 {
     QMutexLocker locker(&mutex);
-    int progress = 0;
+    if (progress >= 0) {
+        return progress;
+    }
+    int p = 0;
     foreach (File *file, files) {
-        progress += file->getProgress();
+        p += file->getProgress();
     }
     if (files.size() == 0) {
         return 0;
     }
-    return static_cast<short>(progress/files.size());
+    progress = static_cast<short>(p/files.size());
+    return progress;
 }
 
 int Package::getSpeed()
 {
     QMutexLocker locker(&mutex);
-    int speed = 0;
-    foreach (File *file, files) {
-        speed += file->getSpeed();
+    if (speed >= 0) {
+        return speed;
     }
-    return speed;
+    int s = 0;
+    foreach (File *file, files) {
+        s += file->getSpeed();
+    }
+    speed = s;
+    return s;
 }
 
 QString Package::getPassword()
@@ -262,11 +305,15 @@ int Package::fileCount()
 
 int Package::getETA()
 {
+    if (eta >= 0) {
+        return eta;
+    }
     if (getSpeed() == 0) {
         return 0;
     }
     if (getSize() - getDownloadedSize() <= 0) {
         return 0;
     }
-    return (getSize() - getDownloadedSize()) / getSpeed();
+    eta = (getSize() - getDownloadedSize()) / getSpeed();
+    return eta;
 }

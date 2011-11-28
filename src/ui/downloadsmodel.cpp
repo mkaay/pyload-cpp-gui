@@ -6,10 +6,9 @@ DownloadsModel::DownloadsModel(QObject *parent) : QAbstractItemModel(parent)
 {
     package_wraps = new QMap<Package*, Wrap*>();
     file_wraps = new QMap<File*, Wrap*>();
-    //packages = new QList<Package*>();
 }
 
-QStringList DownloadsModel::sections = (QStringList() << "Name" << "Status" << "Plugin" << "Priority" << "Size" << "ETA" << "Progress");
+QStringList DownloadsModel::sectionnames = (QStringList() << "Name" << "Status" << "Plugin" << "Size" << "ETA" << "Progress");
 
 QModelIndex DownloadsModel::index(int row, int column, const QModelIndex &parent) const
 {
@@ -62,7 +61,7 @@ int DownloadsModel::rowCount(const QModelIndex &parent) const
 
 int DownloadsModel::columnCount(const QModelIndex &) const
 {
-    return sections.length();
+    return sectionnames.length();
 }
 
 
@@ -75,43 +74,42 @@ QVariant DownloadsModel::data(const QModelIndex &index, int role) const
     if (role == Qt::DisplayRole) {
         if (!parent(index).isValid()) {
             Package *package = packageFromIndex(index);
-            if (index.column() == 0) {
+            if (index.column() == Name) {
                 return package->getName();
-            } else if (index.column() == 1) {
-                return formatStatus(static_cast<FileStatus>(package->getStatus()));
-            } else if (index.column() == 2) {
-                return package->getPlugins().join(", ");
-            } else if (index.column() == 3) {
-                return package->getPriority();
-            } else if (index.column() == 4) {
+            } else if (index.column() == Status) {
+                FileStatus status = static_cast<FileStatus>(package->getStatus());
+                if (status == Downloading) {
+                    return QString("%1 (%2/s)").arg(formatStatus(status), formatSize(package->getSpeed()));
+                }
+                return formatStatus(status);
+            } else if (index.column() == Size) {
                 if (package->getStatus() == Downloading) {
                     return QString("%1/%2").arg(formatSize(package->getDownloadedSize()), formatSize(package->getSize()));
                 }
                 return formatSize(package->getSize());
-            } else if (index.column() == 5) {
+            } else if (index.column() == ETA) {
                 return formatETA(package->getETA());
-            } else if (index.column() == 6) {
+            } else if (index.column() == Progress) {
                 return package->getProgress();
             }
         } else {
             File *file = fileFromIndex(index);
-            if (index.column() == 0) {
+            if (index.column() == Name) {
                 return file->getName();
-            } else if (index.column() == 1) {
-                return formatStatus(static_cast<FileStatus>(file->getStatus()));
-            } else if (index.column() == 2) {
-                return file->getPlugin();
-            } else if (index.column() == 4) {
+            } else if (index.column() == Status) {
+                FileStatus status = static_cast<FileStatus>(file->getStatus());
+                if (status == Downloading) {
+                    return QString("%1 (%2/s)").arg(formatStatus(status), formatSize(file->getSpeed()));
+                }
+                return formatStatus(status);
+            } else if (index.column() == Size) {
                 if (file->getStatus() == Downloading) {
                     return QString("%1/%2").arg(formatSize(file->getDownloadedSize()), formatSize(file->getSize()));
                 }
                 return formatSize(file->getSize());
-            } else if (index.column() == 5) {
-                if (file->getStatus() == Waiting) {
-                    return formatETA(file->getWaitUntil());
-                }
+            } else if (index.column() == ETA) {
                 return formatETA(file->getETA());
-            } else if (index.column() == 6) {
+            } else if (index.column() == Progress) {
                 if (file->getStatus() == Waiting) {
                     return 0;
                 } else {
@@ -134,20 +132,24 @@ QVariant DownloadsModel::data(const QModelIndex &index, int role) const
         }
     } else if (role == Qt::ToolTipRole || role == Qt::StatusTipRole) {
         if (!parent(index).isValid()) {
-            if (index.column() == 0) {
+            if (index.column() == Name) {
                 return packageFromIndex(index)->getName();
+            } else if (index.column() == Plugin) {
+                return packageFromIndex(index)->getPlugins().join(", ");
             }
         } else {
             File *file = fileFromIndex(index);
-            if (index.column() == 0) {
+            if (index.column() == Name) {
                 return file->getName();
-            } else if (index.column() == 1) {
+            } else if (index.column() == Status) {
                 return file->getError();
+            } else if (index.column() == Plugin) {
+                return file->getPlugin();
             }
         }
     } else if (role == Qt::UserRole) {
         if (parent(index).isValid()) {
-            if (index.column() == 6) {
+            if (index.column() == Progress) {
                 if (fileFromIndex(index)->getStatus() == Waiting) {
                     return QVariant(1);
                 } else {
@@ -155,8 +157,28 @@ QVariant DownloadsModel::data(const QModelIndex &index, int role) const
                 }
             }
         } else {
-            if (index.column() == 6) {
+            if (index.column() == Progress) {
                 return QVariant(0);
+            }
+        }
+    } else if (role == Qt::TextAlignmentRole) {
+        if (index.column() == 5) {
+            return Qt::AlignRight;
+        }
+    } else if (role == Qt::FontRole) {
+        if (index.column() == Name && isPackage(index)) {
+            QFont f = QApplication::font();
+            f.setPixelSize(14);
+            return f;
+        }
+    } else if (role == Qt::DecorationRole) {
+        if (index.column() == Plugin) {
+            if (isPackage(index)) {
+                Package *package = packageFromIndex(index);
+                QStringList plugins = package->getPlugins();
+                if (plugins.size() > 0) {
+                    return QIcon(QString(":/hoster/%1.png").arg(plugins.first()));
+                }
             }
         }
     }
@@ -177,33 +199,33 @@ Qt::ItemFlags DownloadsModel::flags(const QModelIndex &index) const
 QVariant DownloadsModel::headerData(int section, Qt::Orientation orientation, int role) const
 {
     if (orientation == Qt::Horizontal && role == Qt::DisplayRole) {
-        return QVariant(sections[section]);
+        return QVariant(sectionnames[section]);
     }
 
     return QVariant();
 }
 
 
-QString DownloadsModel::formatSize(long size) const
+QString DownloadsModel::formatSize(long size, short prec)
 {
     if (size < 1024) {
         return QString("%1 Byte").arg(QString::number(size));
     } else if (size/1024 < 1024) {
-        return QString("%1 KiB").arg(QString::number(size/1024.0, 'f', 2));
+        return QString("%1 KiB").arg(QString::number(size/1024.0, 'f', prec));
     } else if (size/1024/1024 < 1024) {
-        return QString("%1 MiB").arg(QString::number(size/1024.0/1024.0, 'f', 2));
+        return QString("%1 MiB").arg(QString::number(size/1024.0/1024.0, 'f', prec));
     } else {
-        return QString("%1 GiB").arg(QString::number(size/1024.0/1024.0/1024.0, 'f', 2));
+        return QString("%1 GiB").arg(QString::number(size/1024.0/1024.0/1024.0, 'f', prec));
     }
 }
 
-bool DownloadsModel::isPackage(const QModelIndex &index) const
+bool DownloadsModel::isPackage(const QModelIndex &index)
 {
     //QMutexLocker locker(&mutex);
     return static_cast<Wrap*>(index.internalPointer())->isPackage;
 }
 
-Package* DownloadsModel::packageFromIndex(const QModelIndex &index) const
+Package* DownloadsModel::packageFromIndex(const QModelIndex &index)
 {
     //QMutexLocker locker(&mutex);
     if (!isPackage(index)) {
@@ -212,7 +234,7 @@ Package* DownloadsModel::packageFromIndex(const QModelIndex &index) const
     return static_cast<Wrap*>(index.internalPointer())->package;
 }
 
-File* DownloadsModel::fileFromIndex(const QModelIndex &index) const
+File* DownloadsModel::fileFromIndex(const QModelIndex &index)
 {
     if (isPackage(index)) {
         qDebug() << "not a file!";
@@ -235,37 +257,56 @@ int DownloadsModel::packageCount() const
 
 void DownloadsModel::addPackage(Pyload::PackageData &p)
 {
-    //QMutexLocker locker(&mutex);
+    QMutexLocker locker(&mutex);
     Package *package = new Package();
     package->parse(p);
-    if (!package->isActive()) {
-        beginInsertRows(QModelIndex(), packages.size()-1, packages.size());
-        packages.append(package);
+    qDebug() << package->isActive() << package->getOrder();
+    if (package->isActive()) {
+        beginInsertRows(QModelIndex(), package->getOrder(), package->getOrder()+1);
+        packages.insert(package->getOrder(), package);
+        idlookup.insert(package->getID(), package);
+        endInsertRows();
     } else {
+        int off = 0;
         foreach (Package *pack, packages) {
-            if (package->isActive() && !pack->isActive()) {
-                beginInsertRows(QModelIndex(), packages.indexOf(pack), packages.indexOf(pack)+1);
-                packages.insert(packages.indexOf(pack), package);
+            if (pack->isActive()) {
+                off++;
+            } else {
                 break;
             }
         }
+
+        beginInsertRows(QModelIndex(), off+package->getOrder(), off+package->getOrder()+1);
+        packages.insert(off+package->getOrder(), package);
+        idlookup.insert(package->getID(), package);
+        endInsertRows();
     }
 
-    endInsertRows();
+    if (p.links.size() > 0) {
+        qDebug() << "files attached";
+        if (package->fileCount() > 0) {
+            qDebug() << "clearing old files";
+            beginRemoveRows(index(packages.indexOf(package), 0), 0, package->fileCount()-1);
+            package->clearFiles();
+            endRemoveRows();
+        }
 
-    beginInsertRows(index(packages.indexOf(package), 0), 0, p.links.size()-1);
-    foreach (FileData f, p.links) {
-        File *file = new File();
-        file->parse(f);
-        file->setPackage(package);
-        package->addFile(file);
+        beginInsertRows(index(packages.indexOf(package), 0), 0, p.links.size()-1);
+        foreach (FileData f, p.links) {
+            qDebug() << "adding" << f.fid;
+            File *file = new File();
+            file->parse(f);
+            file->setPackage(package);
+            package->addFile(file);
+            filelookup.insert(file->getID(), package->getID());
+        }
+        endInsertRows();
     }
-    endInsertRows();
 }
 
 void DownloadsModel::addPackage(Pyload::PackageInfo &p)
 {
-    //QMutexLocker locker(&mutex);
+    QMutexLocker locker(&mutex);
     Package *package = new Package();
     package->parse(p);
     if (!package->isActive()) {
@@ -280,90 +321,89 @@ void DownloadsModel::addPackage(Pyload::PackageInfo &p)
             }
         }
     }
+    idlookup.insert(package->getID(), package);
+
     endInsertRows();
 }
 
 void DownloadsModel::addFile(Pyload::FileData &f)
 {
-    //QMutexLocker locker(&mutex);
-    foreach (Package *package, packages) {
-        if (package->getID() == f.packageID) {
-            beginInsertRows(index(packages.indexOf(package), 0), package->fileCount()-1, package->fileCount());
-            File *file = new File();
-            file->parse(f);
-            file->setPackage(package);
-            package->addFile(file);
-            endInsertRows();
-            break;
-        }
-    }
+    QMutexLocker locker(&mutex);
+    Package *package = idlookup.value(f.packageID);
+    beginInsertRows(index(packages.indexOf(package), 0), package->fileCount()-1, package->fileCount());
+    File *file = new File();
+    file->parse(f);
+    file->setPackage(package);
+    package->addFile(file);
+    filelookup.insert(file->getID(), package->getID());
+    endInsertRows();
 }
 
 void DownloadsModel::removePackage(int id)
 {
-    foreach (Package *package, packages) {
-        if (package->getID() == id) {
-            beginRemoveRows(QModelIndex(), packages.indexOf(package), packages.indexOf(package)+1);
-            packages.removeOne(package);
-            endRemoveRows();
-            break;
+    beginRemoveRows(QModelIndex(), packages.indexOf(idlookup.value(id)), packages.indexOf(idlookup.value(id))+1);
+    package_wraps->remove(idlookup.value(id));
+    packages.removeOne(idlookup.value(id));
+    idlookup.remove(id);
+    QHashIterator<int, int> i(filelookup);
+    while (i.hasNext()) {
+        i.next();
+        if (i.value() == id) {
+            filelookup.remove(i.key());
         }
     }
+    endRemoveRows();
 }
 
 void DownloadsModel::removeFile(int id)
 {
-    foreach (Package *package, packages) {
-        if (package->contains(id)) {
-            int i = package->indexOf(id);
-            beginRemoveRows(index(packages.indexOf(package), 0), i, i+1);
-            package->removeFile(i);
-            endRemoveRows();
-        }
-    }
+    Package *package = idlookup.value(filelookup.value(id));
+    int i = package->indexOf(id);
+    beginRemoveRows(index(packages.indexOf(package), 0), i, i+1);
+    file_wraps->remove(package->getFile(i));
+    package->removeFile(i);
+    filelookup.remove(id);
+    endRemoveRows();
 }
 
 void DownloadsModel::updateFile(Pyload::FileData &f)
 {
-    foreach (Package *package, packages) {
-        if (package->contains(f.fid)) {
-            int i = package->indexOf(f.fid);
-            package->getFile(i)->parse(f);
-            dataChanged(index(i, 0), index(i, columnCount()-1));
-        }
+    if (!filelookup.contains(f.fid)) {
+        return;
     }
+    Package *package = idlookup.value(filelookup.value(f.fid));
+    int i = package->indexOf(f.fid);
+    package->getFile(i)->parse(f);
+    dataChanged(index(i, 0), index(i, columnCount()-1));
 }
 
 void DownloadsModel::updatePackage(Pyload::PackageData &p)
 {
-    foreach (Package *package, packages) {
-        if (package->getID() == p.pid) {
-            package->parse(p);
-            dataChanged(index(packages.indexOf(package), 0), index(packages.indexOf(package), columnCount()-1));
-            break;
-        }
-    }
+    idlookup.value(p.pid)->parse(p);
+    dataChanged(index(packages.indexOf(idlookup.value(p.pid)), 0), index(packages.indexOf(idlookup.value(p.pid)), columnCount()-1));
 }
 
 void DownloadsModel::updateDownloadStatus(Pyload::DownloadInfo &info)
 {
-    foreach (Package *package, packages) {
-        if (package->contains(info.fid)) {
-            int i = package->indexOf(info.fid);
-            File *file = package->getFile(i);
-            file->setStatus(static_cast<FileStatus>(info.status));
-            file->setETA(info.eta);
-            file->setName(QString::fromStdString(info.name));
-            file->setProgress(info.percent);
-            file->setDownloadedSize(file->getSize()-info.bleft);
-            file->setSpeed(info.speed);
-            file->setWaitUntil(info.wait_until);
-            dataChanged(index(i, 0), index(i, columnCount()-1));
-        }
+    if (!filelookup.contains(info.fid)) {
+        return;
     }
+    Package *package = idlookup.value(filelookup.value(info.fid));
+    int i = package->indexOf(info.fid);
+    File *file = package->getFile(i);
+    file->setStatus(static_cast<FileStatus>(info.status));
+    file->setETA(info.eta);
+    file->setName(QString::fromStdString(info.name));
+    file->setProgress(info.percent);
+    file->setDownloadedSize(file->getSize()-info.bleft);
+    file->setSpeed(info.speed);
+    file->setWaitUntil(info.wait_until);
+    dataChanged(index(i, 0, index(packages.indexOf(package), 0)), index(i, columnCount()-1, index(packages.indexOf(package), columnCount()-1)));
+    package->fileUpdated(info.fid);
+    dataChanged(index(packages.indexOf(package), 0), index(packages.indexOf(package), columnCount()-1));
 }
 
-QString DownloadsModel::formatETA(int seconds) const
+QString DownloadsModel::formatETA(int seconds)
 {
     QString fmt("");
 
@@ -378,21 +418,21 @@ QString DownloadsModel::formatETA(int seconds) const
         }
         fmt.prepend(QString("%1s").arg(QString::number(seconds)));
     } else {
-        fmt.prepend(QString("%1").arg(QString::number(seconds), 2, QChar('0')));
+        fmt.prepend(QString("%1s").arg(QString::number(seconds), 2, QChar('0')));
     }
     if (minutes > 0) {
-        fmt.prepend(":");
-        fmt.prepend(QString("%1").arg(QString::number(minutes), 2, QChar('0')));
+        fmt.prepend(" ");
+        fmt.prepend(QString("%1m").arg(QString::number(minutes), 2, QChar('0')));
     }
     if (hours > 0) {
-        fmt.prepend(":");
-        fmt.prepend(QString("%1").arg(QString::number(hours), 2, QChar('0')));
+        fmt.prepend(" ");
+        fmt.prepend(QString("%1h").arg(QString::number(hours), 2, QChar('0')));
     }
 
     return fmt;
 }
 
-QString DownloadsModel::formatStatus(FileStatus status) const
+QString DownloadsModel::formatStatus(FileStatus status)
 {
     if (status == Finished)     return QString("Finished");
     if (status == Offline)      return QString("Offline");
@@ -409,4 +449,23 @@ QString DownloadsModel::formatStatus(FileStatus status) const
     if (status == Downloading)  return QString("Downloading");
     if (status == Processing)   return QString("Processing");
     if (status == Unknown)      return QString("Unknown");
+    return QString();
+}
+
+void DownloadsModel::disconnected()
+{
+    foreach (Package *package, packages) {
+        package->deleteLater();
+    }
+    packages.clear();
+    idlookup.clear();
+    filelookup.clear();
+    foreach (Wrap *wrap, package_wraps->values()) {
+        delete wrap;
+    }
+    package_wraps->clear();
+    foreach (Wrap *wrap, file_wraps->values()) {
+        delete wrap;
+    }
+    file_wraps->clear();
 }

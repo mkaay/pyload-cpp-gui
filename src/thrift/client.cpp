@@ -8,7 +8,6 @@ ThriftClient::ThriftClient() :
     connectionOK = false;
     error = NoError;
     connect(this, SIGNAL(_doConnect(QString,int,QString,QString)), this, SLOT(_connect(QString,int,QString,QString)));
-    connect(this, SIGNAL(disconnect()), this, SLOT(_disconnect()));
 }
 
 void ThriftClient::doConnect(QString host, int port, QString user, QString password)
@@ -66,7 +65,7 @@ void ThriftClient::_connect(QString host, int port, QString user, QString passwo
     emit connected(connectionOK);
 }
 
-void ThriftClient::_disconnect()
+void ThriftClient::disconnect()
 {
     transport->get()->close();
     connectionOK = false;

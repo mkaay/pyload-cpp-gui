@@ -17,6 +17,9 @@ void EventLoop::init()
                 settings.value("connection/port").toInt(),
                 settings.value("connection/user").toString(),
                 settings.value("connection/password").toString());
+
+    connect(this, SIGNAL(finished()), client, SLOT(disconnect()));
+    connect(this, SIGNAL(finished()), &timer, SLOT(stop()));
 }
 
 void EventLoop::connectionEstablished(bool ok)
@@ -47,65 +50,74 @@ void EventLoop::run()
 
 void EventLoop::updateTrigger()
 {
-    std::vector<Event> events;
+    try {
+        std::vector<Event> events;
 
-    proxy->getEvents(events, uuid.toString().toStdString());
+        proxy->getEvents(events, uuid.toString().toStdString());
 
-    Event event;
-    foreach (event, events) {
-        qDebug() << QString::fromStdString(event.event) << QString::number(event.destination);
-        if (event.event == "reload") {
-            qDebug() << "invoking reload" << currentThreadId();
-            if (event.destination == Destination::Queue) {
-                if (!initQueue) {
-                    initQueue = true;
-                    reloadQueue();
+        Event event;
+        foreach (event, events) {
+            qDebug() << QString::fromStdString(event.event) << QString::number(event.destination);
+            if (event.event == "reload") {
+                qDebug() << "invoking reload" << currentThreadId();
+                if (event.destination == Destination::Queue) {
+                    if (!initQueue) {
+                        initQueue = true;
+                        reloadQueue();
+                    } else {
+                        qDebug() << "ignoring queue reload";
+                    }
                 } else {
-                    qDebug() << "ignoring queue reload";
+                    if (!initCollector) {
+                        initCollector = true;
+                        reloadCollector();
+                    } else {
+                        qDebug() << "ignoring collector reload";
+                    }
                 }
-            } else {
-                if (!initCollector) {
-                    initCollector = true;
-                    reloadCollector();
+            } else if (event.event == "insert") {
+                if (event.type == ElementType::Package) {
+                    insertPackage(event.id);
                 } else {
-                    qDebug() << "ignoring collector reload";
+                    insertFile(event.id);
                 }
-            }
-        } else if (event.event == "insert") {
-            if (event.type == ElementType::Package) {
-                insertPackage(event.id);
-            } else {
-                insertFile(event.id);
-            }
-        } else if (event.event == "remove") {
-            if (event.type == ElementType::Package) {
-                emit removePackage(event.id);
-            } else {
-                emit removeFile(event.id);
-            }
-        } else if (event.event == "update") {
-            if (event.type == ElementType::Package) {
-                PackageData p;
-                proxy->getPackageData(p, event.id);
-                p.links.clear();
-                emit updatePackage(p);
-            } else {
-                FileData f;
-                proxy->getFileData(f, event.id);
-                emit updateFile(f);
+            } else if (event.event == "remove") {
+                if (event.type == ElementType::Package) {
+                    emit removePackage(event.id);
+                } else {
+                    emit removeFile(event.id);
+                }
+            } else if (event.event == "update") {
+                if (event.type == ElementType::Package) {
+                    PackageData p;
+                    proxy->getPackageData(p, event.id);
+                    p.links.clear();
+                    emit updatePackage(p);
+                } else {
+                    FileData f;
+                    proxy->getFileData(f, event.id);
+                    emit updateFile(f);
+                }
             }
         }
+
+        std::vector<Pyload::DownloadInfo> downloads;
+        proxy->statusDownloads(downloads);
+
+        int speed = 0;
+        foreach (Pyload::DownloadInfo info, downloads) {
+            emit updateDownloadStatus(info);
+            speed += info.speed;
+        }
+        emit newSpeed(speed);
+    } catch (...) {
+        qDebug() << "exception in eventloop";
     }
 
-    std::vector<Pyload::DownloadInfo> downloads;
-    proxy->statusDownloads(downloads);
-
-    foreach (Pyload::DownloadInfo info, downloads) {
-        emit updateDownloadStatus(info);
+    if (this->isRunning()) {
+        timer.setInterval(settings.value("eventloop/updatetime", QVariant(1000)).toInt());
+        timer.start();
     }
-
-    timer.setInterval(settings.value("eventloop/updatetime", QVariant(1000)).toInt());
-    timer.start();
 }
 
 void EventLoop::updateFiles(int id)
@@ -125,26 +137,38 @@ void EventLoop::updateFiles(int id)
 void EventLoop::reloadQueue()
 {
     QMutexLocker locker(&mutex);
+    std::map<int16_t, PackageID> o;
+    proxy->getPackageOrder(o, Destination::Collector); //switched
 
-    std::vector<PackageInfo> packageinfos;
-    proxy->getQueue(packageinfos);
+    int order = 0;
+    std::pair<int16_t, PackageID> pair;
+    foreach (pair, o) {
+        PackageData p;
+        proxy->getPackageData(p, pair.second);
+        p.order = order;
 
-    foreach (PackageInfo p, packageinfos) {
         emit addPackage(p);
-        updateFiles(p.pid);
+        updateFiles(pair.second);
+        order++;
     }
 }
 
 void EventLoop::reloadCollector()
 {
     QMutexLocker locker(&mutex);
+    std::map<int16_t, PackageID> o;
+    proxy->getPackageOrder(o, Destination::Queue); // switched
 
-    std::vector<PackageInfo> packageinfos;
-    proxy->getCollector(packageinfos);
+    int order = 0;
+    std::pair<int16_t, PackageID> pair;
+    foreach (pair, o) {
+        PackageData p;
+        proxy->getPackageData(p, pair.second);
+        p.order = order;
 
-    foreach (PackageInfo p, packageinfos) {
         emit addPackage(p);
-        updateFiles(p.pid);
+        updateFiles(pair.second);
+        order++;
     }
 }
 

@@ -22,5 +22,54 @@
         <file>icons/pyload.ico</file>
         <file>icons/pyload2.ico</file>
         <file>icons/pyload-gui.ico</file>
+        <file>icons/arrow_down.png</file>
+        <file>icons/arrow_up.png</file>
+        <file>icons/bullet_go.png</file>
+        <file>icons/cross.png</file>
+        <file>icons/tick.png</file>
+        <file>icons/bullet_green.png</file>
+        <file>icons/bullet_red.png</file>
+        <file>icons/bullet_white.png</file>
+        <file>icons/bullet_blue.png</file>
+        <file>icons/bullet_yellow.png</file>
+    </qresource>
+    <qresource prefix="/">
+        <file>hoster/BitshareCom.png</file>
+        <file>hoster/CrockoCom.png</file>
+        <file>hoster/DepositfilesCom.png</file>
+        <file>hoster/FileApeCom.png</file>
+        <file>hoster/FilefactoryCom.png</file>
+        <file>hoster/FilepostCom.png</file>
+        <file>hoster/FileserveCom.png</file>
+        <file>hoster/FilesonicCom.png</file>
+        <file>hoster/FourSharedCom.png</file>
+        <file>hoster/FreakshareCom.png</file>
+        <file>hoster/HellshareCz.png</file>
+        <file>hoster/HotfileCom.png</file>
+        <file>hoster/KickloadCom.png</file>
+        <file>hoster/LetitbitNet.png</file>
+        <file>hoster/LoadTo.png</file>
+        <file>hoster/megaporn.png</file>
+        <file>hoster/MegasharesCom.png</file>
+        <file>hoster/MegauploadCom.png</file>
+        <file>hoster/MegavideoCom.png</file>
+        <file>hoster/NetloadIn.png</file>
+        <file>hoster/OronCom.png</file>
+        <file>hoster/RapidshareCom.png</file>
+        <file>hoster/SendspaceCom.png</file>
+        <file>hoster/ShareonlineBiz.png</file>
+        <file>hoster/ShragleCom.png</file>
+        <file>hoster/TwoSharedCom.png</file>
+        <file>hoster/UploadboxCom.png</file>
+        <file>hoster/UploadedTo.png</file>
+        <file>hoster/UploadhereCom.png</file>
+        <file>hoster/UploadingCom.png</file>
+        <file>hoster/UploadkingCom.png</file>
+        <file>hoster/WuploadCom.png</file>
+        <file>hoster/X7To.png</file>
+        <file>hoster/YoupornCom.png</file>
+        <file>hoster/YoutubeCom.png</file>
+        <file>hoster/ZippyshareCom.png</file>
+        <file>hoster/ZShareNet.png</file>
     </qresource>
 </RCC>

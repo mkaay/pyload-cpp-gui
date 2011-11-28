@@ -13,10 +13,12 @@
 
 class File;
 
-class Package
+class Package : public QObject
 {
+    Q_OBJECT
 public:
     explicit Package();
+    ~Package();
     void parse(Pyload::PackageData &data);
     void parse(Pyload::PackageInfo &data);
     void addFile(File *f);
@@ -51,6 +53,9 @@ public:
     void sortFiles();
     bool operator <(Package &other);
 
+public slots:
+    void fileUpdated(int id);
+
 private:
     QMutex mutex;
 
@@ -63,7 +68,15 @@ private:
     short priorty;
     short order;
 
+    long size;
+    long downloadedSize;
+    short progress;
+    int speed;
+    int eta;
+    int status;
+
     QList<File*> files;
+    QHash<int, File*> idlookup;
 };
 
 #endif // PACKAGE_H

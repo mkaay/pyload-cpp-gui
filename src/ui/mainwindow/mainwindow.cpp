@@ -11,7 +11,19 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
     ui->settings->setLayout(new QFormLayout());
-    ui->statusBar->addWidget(&downloadStatus);
+
+    speedwidget = new SpeedWidget();
+
+    QWidget *tbwidget = new QWidget();
+
+    QHBoxLayout *tblayout = new QHBoxLayout();
+    tblayout->setContentsMargins(0, 0, 0, 0);
+    tbwidget->setLayout(tblayout);
+    tblayout->addStretch();
+    tblayout->addWidget(speedwidget);
+    ui->mainToolBar->addWidget(tbwidget);
+
+    //speedwidget.resize(speedwidget.sizeHint());
 
     addMenu.addAction("Package");
     addMenu.addAction("Links");
@@ -74,18 +86,27 @@ void MainWindow::startLoop()
     connect(eventloop.data(), SIGNAL(updatePackage(Pyload::PackageData&)), &model, SLOT(updatePackage(Pyload::PackageData&)), Qt::QueuedConnection);
     connect(eventloop.data(), SIGNAL(updateDownloadStatus(Pyload::DownloadInfo&)), &model, SLOT(updateDownloadStatus(Pyload::DownloadInfo&)), Qt::QueuedConnection);
 
+    connect(eventloop.data(), SIGNAL(newSpeed(int)), speedwidget, SLOT(addSpeed(int)));
+
+    connect(eventloop.data(), SIGNAL(finished()), &model, SLOT(disconnected()));
+
     eventloop->start();
     eventloop->init();
 
-    ProgressDelegate *delegate = new ProgressDelegate();
-    ui->downloads->setItemDelegateForColumn(6, delegate);
+    StatusDelegate *statusdelegate = new StatusDelegate();
+    ui->downloads->setItemDelegateForColumn(model.Status, statusdelegate);
 
-    ui->downloads->setColumnWidth(0, 300);
-    ui->downloads->setColumnWidth(1, 100);
-    ui->downloads->setColumnWidth(2, 140);
-    ui->downloads->setColumnWidth(3, 50);
-    ui->downloads->setColumnWidth(4, 130);
-    ui->downloads->setColumnWidth(5, 70);
+    PluginDelegate *plugindelegate = new PluginDelegate();
+    ui->downloads->setItemDelegateForColumn(model.Plugin, plugindelegate);
+
+    ProgressDelegate *progressdelegate = new ProgressDelegate();
+    ui->downloads->setItemDelegateForColumn(model.Progress, progressdelegate);
+
+    ui->downloads->setColumnWidth(model.Name, 300);
+    ui->downloads->setColumnWidth(model.Status, 250);
+    ui->downloads->setColumnWidth(model.Plugin, 80);
+    ui->downloads->setColumnWidth(model.Size, 150);
+    ui->downloads->setColumnWidth(model.ETA, 100);
 
     QTimer::singleShot(0, this, SLOT(updateTrigger()));
 
@@ -280,8 +301,6 @@ void MainWindow::updateServerStatus()
     } else {
         ui->actionPause->setIcon(QIcon(":/images/images/toolbar_pause.png"));
     }
-
-    downloadStatus.setText(QString("Speed: %1").arg(QString::number(status.speed/1024.0, 'f', 2)));
 }
 
 void MainWindow::clipboardChanged()

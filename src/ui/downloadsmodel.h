@@ -6,7 +6,9 @@
 #include <QAbstractItemModel>
 #include <QBrush>
 #include <QColor>
-#include <QSharedPointer>
+#include <QFont>
+#include <QApplication>
+#include <QIcon>
 
 #include "../package.h"
 #include "../file.h"
@@ -35,16 +37,25 @@ public:
     Qt::ItemFlags flags(const QModelIndex &index) const;
     QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const;
 
-    QString formatSize(long size) const;
-    QString formatETA(int eta) const;
-    QString formatStatus(FileStatus status) const;
+    static QString formatSize(long size, short prec = 2);
+    static QString formatETA(int eta);
+    static QString formatStatus(FileStatus status);
 
-    bool isPackage(const QModelIndex &index) const;
-    Package* packageFromIndex(const QModelIndex &index) const;
-    File* fileFromIndex(const QModelIndex &index) const;
+    static bool isPackage(const QModelIndex &index);
+    static Package* packageFromIndex(const QModelIndex &index);
+    static File* fileFromIndex(const QModelIndex &index);
 
     Package* getPackage(int row) const;
     int packageCount() const;
+
+    enum sections {
+        Name,
+        Status,
+        Plugin,
+        Size,
+        ETA,
+        Progress
+    };
 
 public slots:
     void addFile(Pyload::FileData &f);
@@ -56,11 +67,16 @@ public slots:
     void updateFile(Pyload::FileData &f);
     void updateDownloadStatus(Pyload::DownloadInfo &info);
 
+    void disconnected();
+
 private:
-    static QStringList sections;
+    static QStringList sectionnames;
+
     QMap<Package*, Wrap*> *package_wraps;
     QMap<File*, Wrap*> *file_wraps;
     QList<Package*> packages;
+    QHash<int, Package*> idlookup;
+    QHash<int, int> filelookup;
     QMutex mutex;
 };
 

@@ -23,7 +23,10 @@ SOURCES += \
     src/ui/progressdelegate.cpp \
     src/ui/connectionmanager/connectionmanager.cpp \
     src/application.cpp \
-    src/main.cpp
+    src/main.cpp \
+    src/ui/statusdelegate.cpp \
+    src/ui/plugindelegate.cpp \
+    src/ui/speedwidget.cpp
 
 HEADERS  += \
     src/ui/mainwindow/mainwindow.h \
@@ -38,7 +41,10 @@ HEADERS  += \
     src/ui/downloadsmodel.h \
     src/ui/progressdelegate.h \
     src/ui/connectionmanager/connectionmanager.h \
-    src/application.h
+    src/application.h \
+    src/ui/statusdelegate.h \
+    src/ui/plugindelegate.h \
+    src/ui/speedwidget.h
 
 FORMS    += src/ui/mainwindow/mainwindow.ui \
     src/ui/connectionmanager/connectionmanager.ui
@@ -53,6 +59,16 @@ OTHER_FILES += \
     src/thrift/pyload.thrift \
     tools/generateThrift.sh \
     tools/refreshInterface.sh
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -18,12 +18,16 @@
 #include <QUuid>
 #include <QMenu>
 #include <QFileDialog>
+#include <QWidgetAction>
 
 #include "../../thrift/client.h"
 #include "../../thrift/interface/Pyload.h"
 
 #include "../downloadsmodel.h"
 #include "../progressdelegate.h"
+#include "../statusdelegate.h"
+#include "../plugindelegate.h"
+#include "../speedwidget.h"
 
 class EventLoop;
 class DownloadList;
@@ -66,10 +70,10 @@ signals:
 private:
     Ui::MainWindow *ui;
     PyloadClient *proxy;
-    QLabel downloadStatus;
     QMenu addMenu;
     DownloadsModel model;
     QSharedPointer<EventLoop> eventloop;
+    SpeedWidget *speedwidget;
 
     uint logOffset;
     std::vector<ConfigSection> coresections;

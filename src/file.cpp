@@ -1,6 +1,6 @@
 #include "file.h"
 
-File::File()
+File::File() : QObject()
 {
     speed = 0;
     eta = 0;
@@ -21,6 +21,8 @@ void File::parse(Pyload::FileData &data)
     error = QString::fromStdString(data.error);
     //progress = data.progress;
     order = data.order;
+
+    emit update(id);
 }
 
 int File::getID()
@@ -124,6 +126,9 @@ void File::setProgress(short progress)
 int File::getSpeed()
 {
     QMutexLocker locker(&mutex);
+    if (status != Downloading) {
+        return 0;
+    }
     return speed;
 }
 
@@ -171,6 +176,9 @@ Package* File::getPackage()
 int File::getETA()
 {
     QMutexLocker locker(&mutex);
+    if (status != Downloading) {
+        return 0;
+    }
     return eta;
 }
 
@@ -183,6 +191,9 @@ void File::setETA(int eta)
 int File::getWaitUntil()
 {
     QMutexLocker locker(&mutex);
+    if (status != Waiting) {
+        return 0;
+    }
     return waituntil;
 }
 

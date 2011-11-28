@@ -20,10 +20,6 @@ public:
     void init();
 
 signals:
-    //void reloadQueue();
-    //void reloadCollector();
-    //void insertFile(FileID id);
-    //void insertPackage(PackageID id);
     void addFile(Pyload::FileData &f);
     void addPackage(Pyload::PackageData &p);
     void addPackage(Pyload::PackageInfo &p);
@@ -32,6 +28,7 @@ signals:
     void updatePackage(Pyload::PackageData &p);
     void updateFile(Pyload::FileData &f);
     void updateDownloadStatus(Pyload::DownloadInfo &i);
+    void newSpeed(int speed);
 
 public slots:
 
