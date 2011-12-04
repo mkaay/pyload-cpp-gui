@@ -50,69 +50,83 @@ void EventLoop::run()
 
 void EventLoop::updateTrigger()
 {
+    std::vector<Event> events;
+
     try {
-        std::vector<Event> events;
-
         proxy->getEvents(events, uuid.toString().toStdString());
+    } catch (TException e) {
+        qDebug() << "thrift exception in eventloop while getting events:" << e.what();
+    }
 
-        Event event;
-        foreach (event, events) {
-            qDebug() << QString::fromStdString(event.event) << QString::number(event.destination);
-            if (event.event == "reload") {
-                qDebug() << "invoking reload" << currentThreadId();
-                if (event.destination == Destination::Queue) {
-                    if (!initQueue) {
-                        initQueue = true;
-                        reloadQueue();
-                    } else {
-                        qDebug() << "ignoring queue reload";
-                    }
+    Event event;
+    foreach (event, events) {
+        qDebug() << QString::fromStdString(event.event) << QString::number(event.destination);
+        if (event.event == "reload") {
+            if (event.destination == Destination::Queue) {
+                if (!initQueue) {
+                    initQueue = true;
+                    reloadQueue();
                 } else {
-                    if (!initCollector) {
-                        initCollector = true;
-                        reloadCollector();
-                    } else {
-                        qDebug() << "ignoring collector reload";
-                    }
+                    qDebug() << "ignoring queue reload";
                 }
-            } else if (event.event == "insert") {
-                if (event.type == ElementType::Package) {
-                    insertPackage(event.id);
+            } else {
+                if (!initCollector) {
+                    initCollector = true;
+                    reloadCollector();
                 } else {
-                    insertFile(event.id);
+                    qDebug() << "ignoring collector reload";
                 }
-            } else if (event.event == "remove") {
-                if (event.type == ElementType::Package) {
-                    emit removePackage(event.id);
-                } else {
-                    emit removeFile(event.id);
-                }
-            } else if (event.event == "update") {
-                if (event.type == ElementType::Package) {
-                    PackageData p;
+            }
+        } else if (event.event == "insert") {
+            if (event.type == ElementType::Package) {
+                insertPackage(event.id);
+            } else {
+                insertFile(event.id);
+            }
+        } else if (event.event == "remove") {
+            if (event.type == ElementType::Package) {
+                emit removePackage(event.id);
+            } else {
+                emit removeFile(event.id);
+            }
+        } else if (event.event == "update") {
+            if (event.type == ElementType::Package) {
+                PackageData p;
+                try {
                     proxy->getPackageData(p, event.id);
+
                     p.links.clear();
                     emit updatePackage(p);
-                } else {
-                    FileData f;
+                } catch (PackageDoesNotExists) {
+                    qDebug() << "package doest not exist";
+                }
+            } else {
+                FileData f;
+                try {
                     proxy->getFileData(f, event.id);
+
                     emit updateFile(f);
+                } catch (FileDoesNotExists) {
+                    qDebug() << "file doest not exist";
                 }
             }
         }
-
-        std::vector<Pyload::DownloadInfo> downloads;
-        proxy->statusDownloads(downloads);
-
-        int speed = 0;
-        foreach (Pyload::DownloadInfo info, downloads) {
-            emit updateDownloadStatus(info);
-            speed += info.speed;
-        }
-        emit newSpeed(speed);
-    } catch (...) {
-        qDebug() << "exception in eventloop";
     }
+
+    std::vector<Pyload::DownloadInfo> downloads;
+
+    try {
+        proxy->statusDownloads(downloads);
+    } catch (TException e) {
+        qDebug() << "thrift exception in eventloop while getting download info:" << e.what();
+    }
+
+    int speed = 0;
+    foreach (Pyload::DownloadInfo info, downloads) {
+        emit updateDownloadStatus(info);
+        speed += info.speed;
+    }
+    emit updateSpeed(speed);
 
     if (this->isRunning()) {
         timer.setInterval(settings.value("eventloop/updatetime", QVariant(1000)).toInt());

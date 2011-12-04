@@ -83,7 +83,7 @@ QVariant DownloadsModel::data(const QModelIndex &index, int role) const
                 }
                 return formatStatus(status);
             } else if (index.column() == Size) {
-                if (package->getStatus() == Downloading) {
+                if (package->getDownloadedSize() != package->getSize()) {
                     return QString("%1/%2").arg(formatSize(package->getDownloadedSize()), formatSize(package->getSize()));
                 }
                 return formatSize(package->getSize());
@@ -103,7 +103,7 @@ QVariant DownloadsModel::data(const QModelIndex &index, int role) const
                 }
                 return formatStatus(status);
             } else if (index.column() == Size) {
-                if (file->getStatus() == Downloading) {
+                if (file->getDownloadedSize() != file->getSize()) {
                     return QString("%1/%2").arg(formatSize(file->getDownloadedSize()), formatSize(file->getSize()));
                 }
                 return formatSize(file->getSize());
@@ -260,7 +260,6 @@ void DownloadsModel::addPackage(Pyload::PackageData &p)
     QMutexLocker locker(&mutex);
     Package *package = new Package();
     package->parse(p);
-    qDebug() << package->isActive() << package->getOrder();
     if (package->isActive()) {
         beginInsertRows(QModelIndex(), package->getOrder(), package->getOrder()+1);
         packages.insert(package->getOrder(), package);
@@ -293,7 +292,6 @@ void DownloadsModel::addPackage(Pyload::PackageData &p)
 
         beginInsertRows(index(packages.indexOf(package), 0), 0, p.links.size()-1);
         foreach (FileData f, p.links) {
-            qDebug() << "adding" << f.fid;
             File *file = new File();
             file->parse(f);
             file->setPackage(package);
@@ -434,28 +432,29 @@ QString DownloadsModel::formatETA(int seconds)
 
 QString DownloadsModel::formatStatus(FileStatus status)
 {
-    if (status == Finished)     return QString("Finished");
-    if (status == Offline)      return QString("Offline");
-    if (status == Online)       return QString("Online");
-    if (status == Queued)       return QString("Queued");
-    if (status == Skipped)      return QString("Skipped");
-    if (status == Waiting)      return QString("Waiting");
-    if (status == TempOffline)  return QString("TempOffline");
-    if (status == Starting)     return QString("Starting");
-    if (status == Failed)       return QString("Failed");
-    if (status == Aborted)      return QString("Aborted");
-    if (status == Decrypting)   return QString("Decrypting");
-    if (status == Custom)       return QString("Custom");
-    if (status == Downloading)  return QString("Downloading");
-    if (status == Processing)   return QString("Processing");
-    if (status == Unknown)      return QString("Unknown");
+    if (status == Finished)     return QString(tr("Finished"));
+    if (status == Offline)      return QString(tr("Offline"));
+    if (status == Online)       return QString(tr("Online"));
+    if (status == Queued)       return QString(tr("Queued"));
+    if (status == Skipped)      return QString(tr("Skipped"));
+    if (status == Waiting)      return QString(tr("Waiting"));
+    if (status == TempOffline)  return QString(tr("TempOffline"));
+    if (status == Starting)     return QString(tr("Starting"));
+    if (status == Failed)       return QString(tr("Failed"));
+    if (status == Aborted)      return QString(tr("Aborted"));
+    if (status == Decrypting)   return QString(tr("Decrypting"));
+    if (status == Custom)       return QString(tr("Custom"));
+    if (status == Downloading)  return QString(tr("Downloading"));
+    if (status == Processing)   return QString(tr("Processing"));
+    if (status == Unknown)      return QString(tr("Unknown"));
     return QString();
 }
 
 void DownloadsModel::disconnected()
 {
+    beginResetModel();
     foreach (Package *package, packages) {
-        package->deleteLater();
+        delete package;
     }
     packages.clear();
     idlookup.clear();
@@ -468,4 +467,5 @@ void DownloadsModel::disconnected()
         delete wrap;
     }
     file_wraps->clear();
+    endResetModel();
 }

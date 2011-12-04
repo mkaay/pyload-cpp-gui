@@ -190,12 +190,15 @@ int Package::getStatus()
     }
     int st = Finished;
     foreach (File *file, files) {
+        if (file->getStatus() == Skipped) {
+            continue;
+        }
         if (st < file->getStatus()) {
             st = file->getStatus();
         }
     }
     status = st;
-    return st;
+    return status;
 }
 
 short Package::getProgress()

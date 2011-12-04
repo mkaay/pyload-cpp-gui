@@ -26,7 +26,8 @@ SOURCES += \
     src/main.cpp \
     src/ui/statusdelegate.cpp \
     src/ui/plugindelegate.cpp \
-    src/ui/speedwidget.cpp
+    src/ui/speedwidget.cpp \
+    src/ui/downloadsview.cpp
 
 HEADERS  += \
     src/ui/mainwindow/mainwindow.h \
@@ -44,50 +45,25 @@ HEADERS  += \
     src/application.h \
     src/ui/statusdelegate.h \
     src/ui/plugindelegate.h \
-    src/ui/speedwidget.h
+    src/ui/speedwidget.h \
+    src/ui/downloadsview.h
 
-FORMS    += src/ui/mainwindow/mainwindow.ui \
+FORMS += \
+    src/ui/mainwindow/mainwindow.ui \
     src/ui/connectionmanager/connectionmanager.ui
 
 RESOURCES += resources/resources.qrc
 
 LIBS += /usr/local/lib/libthrift.a
 
-INCLUDEPATH += /usr/local/include/thrift
+INCLUDEPATH += \
+    /usr/local/include/thrift \
+    /opt/local/Library/Frameworks/Python.framework/Versions/2.7/include/python2.7/
 
 OTHER_FILES += \
     src/thrift/pyload.thrift \
     tools/generateThrift.sh \
     tools/refreshInterface.sh
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

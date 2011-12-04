@@ -21,7 +21,7 @@ ConnectionManager::ConnectionManager(QWidget *parent) :
 
     ui->portSpinBox->installEventFilter(this);
 
-    connect(this, SIGNAL(_doConnect()), this, SLOT(_connect()));
+    connect(this, SIGNAL(_doConnect()), this, SLOT(_connect()), Qt::QueuedConnection);
 }
 
 ConnectionManager::~ConnectionManager()
@@ -48,7 +48,7 @@ void ConnectionManager::on_connectButton_clicked()
     settings.setValue("connection/user", ui->userLineEdit->text());
     settings.setValue("connection/password", ui->passwordLineEdit->text());
 
-    emit doConnect();
+    emit _doConnect();
 }
 
 void ConnectionManager::doConnect()

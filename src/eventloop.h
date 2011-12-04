@@ -28,7 +28,7 @@ signals:
     void updatePackage(Pyload::PackageData &p);
     void updateFile(Pyload::FileData &f);
     void updateDownloadStatus(Pyload::DownloadInfo &i);
-    void newSpeed(int speed);
+    void updateSpeed(int speed);
 
 public slots:
 

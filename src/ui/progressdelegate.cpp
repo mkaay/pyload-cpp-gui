@@ -11,7 +11,7 @@ ProgressDelegate::ProgressDelegate(QObject *parent) :
 void ProgressDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const
 {
     if (index.isValid()) {
-        QStyleOptionProgressBar progressBarOption;
+        QStyleOptionProgressBarV2 progressBarOption;
         progressBarOption.rect = option.rect;
         progressBarOption.minimum = 0;
         progressBarOption.maximum = 100;
@@ -22,7 +22,7 @@ void ProgressDelegate::paint(QPainter *painter, const QStyleOptionViewItem &opti
             progressBarOption.progress = progress;
             progressBarOption.text = QString::number(progress) + "%";
         } else { //waiting
-            progressBarOption.progress = 0;
+            progressBarOption.progress = -1;
             progressBarOption.text = "waiting";
         }
 

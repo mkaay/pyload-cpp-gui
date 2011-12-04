@@ -50,11 +50,8 @@ void MainWindow::setClient(ThriftClient *client)
 
 void MainWindow::on_actionConnectionManager_triggered()
 {
-    hide();
-
     eventloop->exit();
-
-    emit connectionManager();
+    connect(eventloop.data(), SIGNAL(finished()), this, SIGNAL(connectionManager()));
 }
 
 void MainWindow::updateTrigger()
@@ -68,6 +65,8 @@ void MainWindow::updateTrigger()
 void MainWindow::startLoop()
 {
     logOffset = 0;
+    ui->logBox->clear();
+
     ui->downloads->setModel(&model);
 
     eventloop = QSharedPointer<EventLoop>(new EventLoop);
@@ -86,7 +85,7 @@ void MainWindow::startLoop()
     connect(eventloop.data(), SIGNAL(updatePackage(Pyload::PackageData&)), &model, SLOT(updatePackage(Pyload::PackageData&)), Qt::QueuedConnection);
     connect(eventloop.data(), SIGNAL(updateDownloadStatus(Pyload::DownloadInfo&)), &model, SLOT(updateDownloadStatus(Pyload::DownloadInfo&)), Qt::QueuedConnection);
 
-    connect(eventloop.data(), SIGNAL(newSpeed(int)), speedwidget, SLOT(addSpeed(int)));
+    connect(eventloop.data(), SIGNAL(updateSpeed(int)), speedwidget, SLOT(addSpeed(int)), Qt::QueuedConnection);
 
     connect(eventloop.data(), SIGNAL(finished()), &model, SLOT(disconnected()));
 
@@ -124,10 +123,14 @@ void MainWindow::startLoop()
 
     try {
         proxy->getConfig(coresections);
+    } catch (TApplicationException e) {
+        qDebug() << "config error" << e.what();
+    }
+
+    try {
         proxy->getPluginConfig(pluginsections);
-    } catch (TApplicationException) {
-        qDebug() << "config error";
-        return;
+    } catch (TApplicationException e) {
+        qDebug() << "plugin config error" << e.what();
     }
 
     for (uint i = 0; i < coresections.size(); i++)
@@ -226,7 +229,6 @@ void MainWindow::updateLog()
 {
     std::vector<std::string> log;
     proxy->getLog(log, logOffset);
-    ui->logBox->clear();
 
     std::string line;
     foreach (line, log) {
@@ -313,12 +315,11 @@ void MainWindow::clipboardChanged()
         int pos = 0;
 
         while ((pos = linkmatch.indexIn(clip, pos)) != -1) {
-            links.resize(links.size()+1);
-            links[links.size()-1] = linkmatch.cap().toStdString();
+            links.insert(links.end(), linkmatch.cap().toStdString());
             pos += linkmatch.matchedLength();
         }
 
-        proxy->addPackage("Clipboard", links, Destination::Queue);
+        proxy->addPackage("Clipboard", links, Destination::Collector);
     }
 }
 
@@ -352,7 +353,7 @@ void MainWindow::addContainer()
             QFileInfo info(file);
             if (fh.open(QIODevice::ReadOnly)) {
                 proxy->uploadContainer(info.fileName().toStdString(), QString(fh.readAll()).toStdString());
-                qDebug() << "uplaoded" << info.fileName();
+                qDebug() << "uploaded" << info.fileName();
             } else {
                 qDebug() << "can't open file" << info.fileName();
             }
