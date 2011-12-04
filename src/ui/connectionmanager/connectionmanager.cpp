@@ -108,3 +108,8 @@ void ConnectionManager::on_actionReturnPressed_triggered()
 {
     emit on_connectButton_clicked();
 }
+
+void ConnectionManager::closeConnection()
+{
+    client->disconnect();
+}

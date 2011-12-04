@@ -23,6 +23,7 @@ int main(int argc, char *argv[])
 
     w->connect(w, SIGNAL(connectionManager()), cm, SLOT(show()));
     w->connect(w, SIGNAL(connectionManager()), w, SLOT(hide()));
+    w->connect(w, SIGNAL(closeConnection()), cm, SLOT(closeConnection()));
     cm->setMainWindow(w);
 
     if (settings.value("firststart", true).toBool()) {

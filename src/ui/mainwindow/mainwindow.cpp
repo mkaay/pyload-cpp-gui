@@ -89,6 +89,8 @@ void MainWindow::startLoop()
 
     connect(eventloop.data(), SIGNAL(finished()), &model, SLOT(disconnected()));
 
+    connect(this, SIGNAL(closeConnection()), eventloop.data(), SLOT(exit(int)));
+
     eventloop->start();
     eventloop->init();
 
@@ -269,7 +271,7 @@ void MainWindow::closeEvent(QCloseEvent *event)
 
 void MainWindow::on_actionExit_triggered()
 {
-    QCoreApplication::quit();
+    emit closeConnection();
 }
 
 void MainWindow::on_actionSettings_triggered()

@@ -66,6 +66,7 @@ private slots:
 signals:
     void proxyReady();
     void connectionManager();
+    void closeConnection();
 
 private:
     Ui::MainWindow *ui;

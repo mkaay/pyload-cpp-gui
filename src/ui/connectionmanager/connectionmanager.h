@@ -27,6 +27,9 @@ public:
 signals:
     void _doConnect();
 
+public slots:
+    void closeConnection();
+
 private slots:
     void on_connectButton_clicked();
     void connected(bool ok);
